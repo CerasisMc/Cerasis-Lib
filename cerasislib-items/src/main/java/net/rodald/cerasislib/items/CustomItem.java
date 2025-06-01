@@ -3,21 +3,30 @@ package net.rodald.cerasislib.items;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public abstract class CustomItem {
+
+    private static final Map<Component, CustomItem> usableItems = new HashMap<>();
+
     public abstract Material getMaterial();
 
     public abstract Component getItemName();
 
-    public abstract ArrayList<Component> getItemLore();
+    public abstract List<Component> getItemLore();
+
+    public CustomItem() {
+        usableItems.put(getItemName(), this);
+    }
 
     /**
      * Returns the {@link NamespacedKey} used for identifying custom textures.
@@ -43,7 +52,8 @@ public abstract class CustomItem {
      *
      * @param item The item stack to prepare.
      */
-    protected void prepareItem(ItemStack item) {}
+    protected void prepareItem(ItemStack item) {
+    }
 
     public void setItem(Player player, int slot) {
         ItemStack item = createItem();
@@ -53,6 +63,11 @@ public abstract class CustomItem {
     public void setItem(Player player) {
         ItemStack item = createItem();
         player.getInventory().addItem(item);
+    }
+
+    public static CustomItem getItemByName(Component displayName) {
+        Bukkit.broadcastMessage(usableItems.toString());
+        return usableItems.get(displayName);
     }
 
     public ItemStack createItem() {
