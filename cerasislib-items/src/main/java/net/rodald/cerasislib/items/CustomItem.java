@@ -16,7 +16,7 @@ import java.util.Map;
 
 public abstract class CustomItem {
 
-    private static final Map<Component, CustomItem> usableItems = new HashMap<>();
+    public static final Map<Component, CustomItem> customItems = new HashMap<>();
 
     public abstract Material getMaterial();
 
@@ -25,7 +25,7 @@ public abstract class CustomItem {
     public abstract List<Component> getItemLore();
 
     public CustomItem() {
-        usableItems.put(getItemName(), this);
+        customItems.put(getItemName(), this);
     }
 
     /**
@@ -66,8 +66,8 @@ public abstract class CustomItem {
     }
 
     public static CustomItem getItemByName(Component displayName) {
-        Bukkit.broadcastMessage(usableItems.toString());
-        return usableItems.get(displayName);
+        Bukkit.broadcastMessage(customItems.toString());
+        return customItems.get(displayName);
     }
 
     public ItemStack createItem() {
