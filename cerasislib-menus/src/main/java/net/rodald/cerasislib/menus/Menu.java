@@ -1,4 +1,4 @@
-package net.rodald.menusystem;
+package net.rodald.cerasislib.menus;
 
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
