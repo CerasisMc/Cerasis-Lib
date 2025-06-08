@@ -1,10 +1,8 @@
 package net.rodald.cerasislib.items;
 
 import com.destroystokyo.paper.event.player.PlayerJumpEvent;
-import net.kyori.adventure.text.Component;
 import net.rodald.cerasislib.items.interfaces.*;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -13,9 +11,9 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -43,15 +41,13 @@ public class ItemLibService implements Listener {
     private void onBlockBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
         ItemStack itemStack = player.getInventory().getItemInMainHand();
-        ItemMeta meta = itemStack.getItemMeta();
-        if (meta != null && meta.hasDisplayName()) {
-            Component displayName = meta.displayName();
-            CustomItem usableItem = CustomItem.getItemByName(displayName);
-            if (usableItem == null) return;
 
-            if (usableItem instanceof BlockBreak blockBreak) {
-                blockBreak.handleBlockBreak(event);
-            }
+        CustomItem customItem = CustomItem.getCustomItem(itemStack);
+
+        if (customItem == null) return;
+
+        if (customItem instanceof BlockBreak blockBreak) {
+            blockBreak.handleBlockBreak(event);
         }
     }
 
@@ -60,22 +56,19 @@ public class ItemLibService implements Listener {
         if (event.getDamager() instanceof Player player) {
             ItemStack itemStack = player.getInventory().getItemInMainHand();
 
-            ItemMeta meta = itemStack.getItemMeta();
-            if (meta != null && meta.hasDisplayName()) {
-                Component displayName = meta.displayName();
-                CustomItem usableItem = CustomItem.getItemByName(displayName);
+            CustomItem customItem = CustomItem.getCustomItem(itemStack);
 
-                if (usableItem == null) return;
-                if (usableItem instanceof EntityDamageByEntity entityDamageByEntity) {
-                    entityDamageByEntity.handleEntityDamageByEntity(event);
-                }
+            if (customItem == null) return;
+
+            if (customItem instanceof EntityDamageByEntity entityDamageByEntity) {
+                entityDamageByEntity.handleEntityDamageByEntity(event);
             }
         }
     }
 
     @EventHandler
     private void onEntityChangeBlock(EntityChangeBlockEvent event) {
-        for (Map.Entry<Component, CustomItem> entry : CustomItem.customItems.entrySet()) {
+        for (Map.Entry<ItemStack, CustomItem> entry : CustomItem.customItems.entrySet()) {
             if (entry.getValue() instanceof EntityChangeBlock entityChangeBlock) {
                 entityChangeBlock.handleEntityChangeBlock(event);
             }
@@ -86,12 +79,7 @@ public class ItemLibService implements Listener {
     private void onPlayerDropItem(PlayerDropItemEvent event) {
         ItemStack itemStack = event.getItemDrop().getItemStack();
 
-
-        ItemMeta meta = itemStack.getItemMeta();
-        if (meta == null || !meta.hasDisplayName()) return;
-
-        Component displayName = meta.displayName();
-        CustomItem customItem = CustomItem.getItemByName(displayName);
+        CustomItem customItem = CustomItem.getCustomItem(itemStack);
 
         if (customItem == null) return;
 
@@ -104,51 +92,34 @@ public class ItemLibService implements Listener {
     private void onPlayerDeath(PlayerDeathEvent event) {
         ItemStack itemStack = event.getPlayer().getInventory().getItemInMainHand();
 
+        CustomItem customItem = CustomItem.getCustomItem(itemStack);
 
-        ItemMeta meta = itemStack.getItemMeta();
-        if (meta != null && meta.hasDisplayName()) {
-            Component displayName = meta.displayName();
-            CustomItem usableItem = CustomItem.getItemByName(displayName);
+        if (customItem == null) return;
 
-            if (usableItem == null) return;
-
-            if (usableItem instanceof PlayerDeath playerDeath) {
-                playerDeath.handlePlayerDeath(event);
-            }
+        if (customItem instanceof PlayerDeath playerDeath) {
+            playerDeath.handlePlayerDeath(event);
         }
     }
 
     @EventHandler
     public void onPlayerJump(PlayerJumpEvent event) {
-        Player player = event.getPlayer();
-        ItemStack itemStack = player.getInventory().getItemInMainHand();
-        ItemMeta meta = itemStack.getItemMeta();
-        if (meta != null && meta.hasDisplayName()) {
-            Component displayName = meta.displayName();
-            CustomItem customItem = CustomItem.getItemByName(displayName);
+        ItemStack itemStack = event.getPlayer().getInventory().getItemInMainHand();
 
-            if (customItem == null) return;
+        CustomItem customItem = CustomItem.getCustomItem(itemStack);
 
-            if (customItem instanceof PlayerJump playerJump) {
-                playerJump.handlePlayerJump(event);
-            }
+        if (customItem == null) return;
+
+        if (customItem instanceof PlayerJump playerJump) {
+            playerJump.handlePlayerJump(event);
         }
-
     }
+
 
     @EventHandler
     private void onPlayerInteract(PlayerInteractEvent event) {
         ItemStack itemStack = event.getItem();
 
-        event.setCancelled(true);
-        event.setUseItemInHand(Event.Result.ALLOW);
-
-        if (itemStack == null) return;
-        ItemMeta meta = itemStack.getItemMeta();
-        if (meta == null || !meta.hasDisplayName()) return;
-
-        Component displayName = meta.displayName();
-        CustomItem customItem = CustomItem.getItemByName(displayName);
+        CustomItem customItem = CustomItem.getCustomItem(itemStack);
 
         if (customItem == null) return;
 
@@ -158,20 +129,28 @@ public class ItemLibService implements Listener {
     }
 
     @EventHandler
+    private void onPlayerItemConsume(PlayerItemConsumeEvent event) {
+        ItemStack itemStack = event.getItem();
+
+        CustomItem customItem = CustomItem.getCustomItem(itemStack);
+
+        if (customItem == null) return;
+
+        if (customItem instanceof Consumable consumable) {
+            consumable.handleConsumption(event);
+        }
+    }
+
+    @EventHandler
     private void onPlayerQuit(PlayerQuitEvent event) {
         ItemStack itemStack = event.getPlayer().getInventory().getItemInMainHand();
 
+        CustomItem customItem = CustomItem.getCustomItem(itemStack);
 
-        ItemMeta meta = itemStack.getItemMeta();
-        if (meta != null && meta.hasDisplayName()) {
-            Component displayName = meta.displayName();
-            CustomItem customItem = CustomItem.getItemByName(displayName);
+        if (customItem == null) return;
 
-            if (customItem == null) return;
-
-            if (customItem instanceof PlayerQuit playerQuit) {
-                playerQuit.handlePlayerQuit(event);
-            }
+        if (customItem instanceof PlayerQuit playerQuit) {
+            playerQuit.handlePlayerQuit(event);
         }
     }
 
@@ -179,7 +158,7 @@ public class ItemLibService implements Listener {
         new BukkitRunnable() {
             @Override
             public void run() {
-                for (Map.Entry<Component, CustomItem> entry : CustomItem.customItems.entrySet()) {
+                for (Map.Entry<ItemStack, CustomItem> entry : CustomItem.customItems.entrySet()) {
                     if (entry.getValue() instanceof Tickable tickable) {
                         tickable.tick();
                     }

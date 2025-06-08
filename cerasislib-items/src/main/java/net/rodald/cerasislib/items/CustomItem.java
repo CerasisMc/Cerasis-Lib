@@ -3,20 +3,26 @@ package net.rodald.cerasislib.items;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
+import org.jetbrains.annotations.NotNull;
 
+import java.lang.reflect.Constructor;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public abstract class CustomItem {
 
-    public static final Map<Component, CustomItem> customItems = new HashMap<>();
+    public static final Map<ItemStack, CustomItem> customItems = new HashMap<>();
 
     public abstract Material getMaterial();
 
@@ -25,7 +31,10 @@ public abstract class CustomItem {
     public abstract List<Component> getItemLore();
 
     public CustomItem() {
-        customItems.put(getItemName(), this);
+        for (Player player : Bukkit.getOnlinePlayers() ) {
+            player.sendMessage("Broadcast! created a new item: " + this.toString());
+        }
+        customItems.put(this.createItem(), this);
     }
 
     /**
@@ -45,14 +54,13 @@ public abstract class CustomItem {
      */
     public abstract NamespacedKey getNamespacedKey();
 
-
     /**
-     * Optional method to prepare item-specific customizations.
+     * Optional method to prepare itemStack-specific customizations.
      * Can be overridden by subclasses to apply additional meta-settings.
      *
-     * @param item The item stack to prepare.
+     * @param itemStack The itemStack stack to prepare.
      */
-    protected void prepareItem(ItemStack item) {
+    protected void prepareItem(ItemStack itemStack) {
     }
 
     public void setItem(Player player, int slot) {
@@ -65,10 +73,52 @@ public abstract class CustomItem {
         player.getInventory().addItem(item);
     }
 
-    public static CustomItem getItemByName(Component displayName) {
-        Bukkit.broadcastMessage(customItems.toString());
-        return customItems.get(displayName);
+    /**
+     * Retrieves or reconstructs a CustomItem from an ItemStack.
+     *
+     * @param itemStack The ItemStack to check and retrieve a CustomItem for.
+     * @return The corresponding CustomItem, or null if invalid or reconstruction failed.
+     */
+    public static CustomItem getCustomItem(ItemStack itemStack) {
+        if (!isCustomItem(itemStack)) {
+            return null;
+        }
+
+        ItemMeta meta = itemStack.getItemMeta();
+        PersistentDataContainer container = meta.getPersistentDataContainer();
+
+        // Get the class name from PersistentDataContainer
+        String className = container.get(new NamespacedKey("cerasis", "custom_item_key"), PersistentDataType.STRING);
+
+        if (className == null) {
+            return null;
+        }
+
+        // Check if the CustomItem is already registered
+        for (CustomItem customItem : customItems.values()) {
+            if (customItem.getClass().getName().equals(className)) {
+                return customItem;
+            }
+        }
+
+        // Try to create a new instance of the matching class
+        Bukkit.broadcastMessage("Try to create Item...");
+        Bukkit.broadcastMessage("Class: " + className);
+        try {
+            Class<?> clazz = Class.forName(className);
+            if (CustomItem.class.isAssignableFrom(clazz)) {
+                Constructor<?> constructor = clazz.getConstructor();
+                return (CustomItem) constructor.newInstance();
+            } else {
+                throw new IllegalArgumentException("Class " + className + " is not a subclass of CustomItem.");
+            }
+        } catch (Exception e) {
+            Bukkit.getLogger().severe("Failed to create CustomItem for class: " + className);
+            e.printStackTrace();
+            return null;
+        }
     }
+
 
     public ItemStack createItem() {
         ItemStack item = new ItemStack(this.getMaterial());
@@ -82,6 +132,12 @@ public abstract class CustomItem {
 
             meta.lore(modifiedLore);
             meta.setItemModel(getNamespacedKey());
+
+            meta.getPersistentDataContainer().set(
+                    new NamespacedKey("cerasis", "custom_item_key"),
+                    PersistentDataType.STRING,
+                    this.getClass().getName()
+            );
             item.setItemMeta(meta);
         }
 
@@ -89,6 +145,24 @@ public abstract class CustomItem {
 
         return item;
     }
+
+    /**
+     * Checks whether the given item stack is a custom item by searching for the `custom_item_key`.
+     *
+     * @param itemStack The item stack to check.
+     * @return True if it's a custom item, false otherwise.
+     */
+    public static boolean isCustomItem(ItemStack itemStack) {
+        if (itemStack == null || !itemStack.hasItemMeta()) {
+            return false;
+        }
+
+        ItemMeta meta = itemStack.getItemMeta();
+        PersistentDataContainer container = meta.getPersistentDataContainer();
+
+        return container.has(new NamespacedKey("cerasis", "custom_item_key"), PersistentDataType.STRING);
+    }
+
 
     protected Component applyGradient(String text, TextColor startColor, TextColor endColor) {
         Component gradientBuilder = Component.empty();
