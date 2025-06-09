@@ -5,11 +5,11 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>net.rodald</groupId>
-  <artifactId>cerasislib-menus</artifactId>
+  <artifactId>cerasislib-display</artifactId>
   <version>1.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
-  <name>cerasislib-menus</name>
+  <name>cerasislib-display</name>
 
   <properties>
     <java.version>21</java.version>
@@ -72,6 +72,12 @@
         </executions>
       </plugin>
     </plugins>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
   </build>
 
   <repositories>
