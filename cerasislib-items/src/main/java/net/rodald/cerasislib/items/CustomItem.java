@@ -24,7 +24,7 @@ public abstract class CustomItem {
 
     public static final Map<ItemStack, CustomItem> customItems = new HashMap<>();
 
-    public abstract Material getMaterial();
+    public abstract @NotNull Material getMaterial();
 
     public abstract Component getItemName();
 
