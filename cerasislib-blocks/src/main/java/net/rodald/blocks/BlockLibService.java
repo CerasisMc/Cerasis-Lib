@@ -70,10 +70,6 @@ public class BlockLibService implements Listener {
 
                 if (blockLocation.equals(itemDisplayLocation)) {
                     ItemStack displayedItem = itemDisplay.getItemStack();
-                    ItemMeta meta = displayedItem.getItemMeta();
-
-
-                    displayedItem.setItemMeta(meta);
 
                     if (gameMode == GameMode.SURVIVAL && event.isDropItems()) {
 
@@ -82,6 +78,7 @@ public class BlockLibService implements Listener {
                         event.setDropItems(false);
                     }
 
+                    Bukkit.broadcastMessage("BLOCK BREAK");
                     itemDisplay.remove();
                     block.setType(Material.AIR);
                 }
@@ -122,9 +119,10 @@ public class BlockLibService implements Listener {
                     if (collision) return;
 
 
-                    // place custom block
+                    // place custom block: use scheduler so block doesnt get placed twice
                     Bukkit.getScheduler().runTask(instance, () -> {
                         customBlock.place(targetBlock.getWorld(), placeLocation, player);
+                        player.swingHand(event.getHand());
                     });
 
                     // remove item if player is not in creative mode
