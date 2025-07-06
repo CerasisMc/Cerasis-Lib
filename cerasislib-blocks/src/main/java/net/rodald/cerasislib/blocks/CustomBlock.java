@@ -1,6 +1,6 @@
-package net.rodald.blocks;
+package net.rodald.cerasislib.blocks;
 
-import net.rodald.blocks.interfaces.DirectionalBlock;
+import net.rodald.cerasislib.blocks.interfaces.DirectionalBlock;
 import net.rodald.cerasislib.items.CustomItem;
 import org.bukkit.Location;
 import org.bukkit.Material;

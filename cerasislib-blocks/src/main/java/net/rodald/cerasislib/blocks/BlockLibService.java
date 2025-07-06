@@ -1,12 +1,24 @@
-package net.rodald.blocks;
+package net.rodald.cerasislib.blocks;
 
-import net.rodald.blocks.interfaces.Touchable;
+import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.ProtocolLibrary;
+import com.comphenix.protocol.ProtocolManager;
+import com.comphenix.protocol.events.ListenerPriority;
+import com.comphenix.protocol.events.PacketAdapter;
+import com.comphenix.protocol.events.PacketContainer;
+import com.comphenix.protocol.events.PacketEvent;
+import com.comphenix.protocol.wrappers.BlockPosition;
+import com.comphenix.protocol.wrappers.EnumWrappers;
+import net.rodald.cerasislib.blocks.interfaces.Touchable;
 import net.rodald.cerasislib.items.CustomItem;
-import net.rodald.cerasislib.items.interfaces.Tickable;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.entity.*;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.ItemDisplay;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
@@ -16,17 +28,21 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.BoundingBox;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 public class BlockLibService implements Listener {
 
     private static JavaPlugin instance;
+    private static ProtocolManager protocolManager;
+
+    private static final Map<Player, Integer> particleTasks = new HashMap<>();
+
 
     /**
      * Initializes the item library service and registers event handlers.
@@ -34,9 +50,11 @@ public class BlockLibService implements Listener {
      * @param plugin The JavaPlugin instance to register events with
      */
     public static void init(JavaPlugin plugin) {
+        protocolManager = ProtocolLibrary.getProtocolManager();
         instance = plugin;
         BlockLibService service = new BlockLibService();
         plugin.getServer().getPluginManager().registerEvents(service, plugin);
+        interceptPackets();
 
         onTick();
     }
@@ -136,6 +154,97 @@ public class BlockLibService implements Listener {
                 }
             }
         }
+    }
+
+    private static void interceptPackets() {
+        if (protocolManager == null) return;
+
+        protocolManager.addPacketListener(new PacketAdapter(instance, ListenerPriority.NORMAL, PacketType.Play.Client.BLOCK_DIG) {
+            @Override
+            public void onPacketReceiving(PacketEvent event) {
+                Player player = event.getPlayer();
+                PacketContainer packet = event.getPacket();
+
+                EnumWrappers.PlayerDigType digType = packet.getPlayerDigTypes().read(0);
+                BlockPosition blockPos = packet.getBlockPositionModifier().read(0);
+                EnumWrappers.Direction direction = packet.getDirections().read(0); // Die Seite, die angeklickt wird
+
+                World world = player.getWorld();
+                Location blockLocation = blockPos.toLocation(world).add(0.5, 0.5, 0.5);
+                Block block = world.getBlockAt(blockLocation);
+                for (Entity entity : block.getChunk().getEntities()) {
+                    if (entity instanceof ItemDisplay itemDisplay) {
+                        Location itemDisplayLocation = itemDisplay.getLocation();
+
+                        itemDisplayLocation.setYaw(blockLocation.getYaw());
+                        itemDisplayLocation.setPitch(blockLocation.getPitch());
+
+                        if (blockLocation.equals(itemDisplayLocation)) {
+                            // START = Effekt starten
+                            if (digType == EnumWrappers.PlayerDigType.START_DESTROY_BLOCK) {
+                                if (particleTasks.containsKey(player)) return; // bereits aktiv
+
+                                int taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(instance, () -> {
+                                    spawnParticlesOnBlockFace(block, direction);
+                                }, 0L, 2L); // alle 2 Ticks
+
+                                particleTasks.put(player, taskId);
+                            }
+
+                            // STOP oder ABORT = Effekt stoppen
+                            if (digType == EnumWrappers.PlayerDigType.ABORT_DESTROY_BLOCK ||
+                                    digType == EnumWrappers.PlayerDigType.STOP_DESTROY_BLOCK) {
+
+                                Integer taskId = particleTasks.remove(player);
+                                if (taskId != null) {
+                                    Bukkit.getScheduler().cancelTask(taskId);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // FIXME: Particle always spawn where the player started mining the block, not the side it is currently mined from
+    public static void spawnParticlesOnBlockFace(Block block, EnumWrappers.Direction direction) {
+        World world = block.getWorld();
+        BoundingBox boundingBox = block.getBoundingBox();
+        Location base = boundingBox.getCenter().toLocation(world);
+
+        double offsetX = boundingBox.getWidthX() / 4;
+        double offsetY = boundingBox.getHeight() / 4;
+        double offsetZ = boundingBox.getWidthZ() / 4;
+        switch (direction) {
+            case UP:
+                offsetY = 0;
+                base.setY(boundingBox.getMaxY() + 0.1);
+                break;
+            case DOWN:
+                offsetY = 0;
+                base.setY(boundingBox.getMinY() - 0.1);
+                break;
+            case NORTH:
+                offsetZ = 0.0;
+                base.setZ(boundingBox.getMinZ() - 0.1);
+                break;
+            case SOUTH:
+                offsetZ = 0.0;
+                base.setZ(boundingBox.getMaxZ() + 0.1);
+                break;
+            case WEST:
+                offsetX = 0.0;
+                base.setX(boundingBox.getMinX() - 0.1);
+                break;
+            case EAST:
+                offsetX = 0.0;
+                base.setX(boundingBox.getMaxX() + 0.1);
+                break;
+        }
+        Bukkit.broadcastMessage("Particles spawn at: " + base.toString());
+        Bukkit.broadcastMessage("With offset: (" + offsetX + "|" + offsetY + "|" + offsetZ + ")");
+        world.spawnParticle(Particle.BLOCK_CRUMBLE, base, 1, offsetX, offsetY, offsetZ, 0, Material.STONE.createBlockData());
     }
 
     private static void onTick() {

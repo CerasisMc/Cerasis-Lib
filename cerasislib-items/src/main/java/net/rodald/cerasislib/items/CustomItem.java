@@ -3,7 +3,7 @@ package net.rodald.cerasislib.items;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import net.rodald.cerasislib.items.interfaces.PrepareInterface;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -15,7 +15,6 @@ import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Constructor;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -141,6 +140,9 @@ public abstract class CustomItem {
             item.setItemMeta(meta);
         }
 
+        if (this instanceof PrepareInterface prepareInterface) {
+            prepareInterface.prepareItem(item);
+        }
         prepareItem(item);
 
         return item;

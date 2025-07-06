@@ -1,4 +1,4 @@
-package net.rodald.blocks.interfaces;
+package net.rodald.cerasislib.blocks.interfaces;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
