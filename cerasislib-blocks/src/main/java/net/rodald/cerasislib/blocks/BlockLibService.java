@@ -22,9 +22,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockBurnEvent;
+import org.bukkit.event.block.*;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
@@ -33,17 +31,15 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.BoundingBox;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class BlockLibService implements Listener {
 
     private static JavaPlugin instance;
     private static ProtocolManager protocolManager;
 
+    private final Set<UUID> alreadyTeleported = new HashSet<>();
     private static final Map<Player, Integer> particleTasks = new HashMap<>();
-
 
     /**
      * Initializes the item library service and registers event handlers.
@@ -61,17 +57,33 @@ public class BlockLibService implements Listener {
     }
 
     @EventHandler
-    public void onBlockBreak(BlockBreakEvent event) {
+    private void onBlockBreak(BlockBreakEvent event) {
         handleBlockBreak(event.getBlock(), event.getPlayer().getGameMode(), event);
     }
 
     @EventHandler
-    public void onBlockBurn(BlockBurnEvent event) {
+    private void onBlockBurn(BlockBurnEvent event) {
         handleBlockBreak(event.getBlock(), null, null);
     }
 
     @EventHandler
-    public void onEntityExplode(EntityExplodeEvent event) {
+    private void onBlockPistonExtend(BlockPistonExtendEvent event) {
+        alreadyTeleported.clear();
+        for (Block block : event.getBlocks()) {
+            alreadyTeleported.add(handlePistonMove(block, event.getDirection(), alreadyTeleported));
+        }
+    }
+
+    @EventHandler
+    private void onBlockPistonRetract(BlockPistonRetractEvent event) {
+        alreadyTeleported.clear();
+        for (Block block : event.getBlocks()) {
+            alreadyTeleported.add(handlePistonMove(block, event.getDirection(), alreadyTeleported));
+        }
+    }
+
+    @EventHandler
+    private void onEntityExplode(EntityExplodeEvent event) {
         for (Block block : event.blockList()) {
             handleBlockBreak(block, null, null);
         }
@@ -136,6 +148,24 @@ public class BlockLibService implements Listener {
                 }
             }
         }
+    }
+
+    private UUID handlePistonMove(Block block, BlockFace blockFace, Set<UUID> alreadyTeleported) {
+        Location blockLocation = block.getLocation().add(0.5, 0.5, 0.5);
+
+        for (Entity entity : block.getChunk().getEntities()) {
+            if (entity instanceof ItemDisplay itemDisplay) {
+                UUID uuid = itemDisplay.getUniqueId();
+                if (!alreadyTeleported.contains(uuid)) {
+                    if (blockLocation.equals(itemDisplay.getLocation())) {
+                        Location location = block.getRelative(blockFace).getLocation();
+                        itemDisplay.teleport(location.add(0.5, 0.5, 0.5));
+                        return uuid;
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     @EventHandler
@@ -242,7 +272,7 @@ public class BlockLibService implements Listener {
         });
     }
 
-    public static void spawnParticlesOnBlockFace(Block block, Player player, Material material) {
+    private static void spawnParticlesOnBlockFace(Block block, Player player, Material material) {
         BlockFace blockFace = player.getTargetBlockFace((int) player.getAttribute(Attribute.BLOCK_INTERACTION_RANGE).getValue() + 1);
         World world = block.getWorld();
         BoundingBox boundingBox = block.getBoundingBox();
@@ -328,7 +358,7 @@ public class BlockLibService implements Listener {
     }
 
 
-    public static boolean isStandingOn(BoundingBox blockBox, BoundingBox playerBox) {
+    private static boolean isStandingOn(BoundingBox blockBox, BoundingBox playerBox) {
         // if the maxY of the block bounding box == the minY of the players box, if they intersect 2d they are standing on it
         // unfortunately bukkit's BoundingBox doesn't have an intersect2d method, so we shift it up.
         return blockBox.getMaxY() == playerBox.getMinY();
