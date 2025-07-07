@@ -3,7 +3,9 @@ package net.rodald.cerasislib.blocks;
 import net.rodald.cerasislib.blocks.interfaces.DirectionalBlock;
 import net.rodald.cerasislib.items.CustomItem;
 import org.bukkit.*;
+import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -11,6 +13,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.Transformation;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
@@ -23,6 +26,8 @@ public abstract class CustomBlock extends CustomItem {
     }
 
     public abstract @NotNull Material getBlockType();
+
+    public abstract float getBlockHardness();
 
     /**
      * Used for generating the block particles when mining the block
@@ -71,6 +76,28 @@ public abstract class CustomBlock extends CustomItem {
                         ));
                     }
                 });
+    }
+
+
+    public static CustomBlock getCustomBlock(@Nullable Block block) {
+        if (block == null) return null;
+
+        Location blockLocation = block.getLocation().add(0.5, 0.5, 0.5);
+
+        for (Entity entity : block.getChunk().getEntities()) {
+            if (entity instanceof ItemDisplay itemDisplay) {
+                Location itemDisplayLocation = itemDisplay.getLocation();
+
+                itemDisplayLocation.setYaw(blockLocation.getYaw());
+                itemDisplayLocation.setPitch(blockLocation.getPitch());
+
+                if (blockLocation.equals(itemDisplayLocation) && CustomBlock.isCustomBlock(itemDisplay)) {
+                    return CustomBlock.getCustomBlock(itemDisplay);
+                }
+            }
+        }
+
+        return null;
     }
 
     public static boolean isCustomBlock(ItemDisplay itemDisplay) {

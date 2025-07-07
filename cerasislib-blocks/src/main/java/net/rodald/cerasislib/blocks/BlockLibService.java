@@ -14,6 +14,7 @@ import net.rodald.cerasislib.blocks.interfaces.Touchable;
 import net.rodald.cerasislib.items.CustomItem;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
@@ -142,7 +143,6 @@ public class BlockLibService implements Listener {
                         event.setDropItems(false);
                     }
 
-                    Bukkit.broadcastMessage("BLOCK BREAK");
                     itemDisplay.remove();
                     block.setType(Material.AIR);
                 }
@@ -306,7 +306,7 @@ public class BlockLibService implements Listener {
                 offsetX = 0.0;
                 base.setX(boundingBox.getMaxX() + 0.1);
                 break;
-            default:
+            case null, default:
                 break;
         }
 
@@ -317,6 +317,29 @@ public class BlockLibService implements Listener {
         new BukkitRunnable() {
             @Override
             public void run() {
+
+                // fail check in case the player manages to glitch the system (It's pretty easy)
+                // still remove his mining speed if player is looking at normal block
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    Block block = player.getTargetBlockExact((int) (player.getAttribute(Attribute.BLOCK_INTERACTION_RANGE).getValue() + 1));
+                    CustomBlock customBlock = CustomBlock.getCustomBlock(block);
+                    if (player.getAttribute(Attribute.BLOCK_BREAK_SPEED)
+                            .getModifier(new NamespacedKey("cerasis", "custom_block")) != null) {
+                        if (customBlock != null) continue;
+
+                        player.getAttribute(Attribute.BLOCK_BREAK_SPEED).removeModifier(new NamespacedKey("cerasis", "custom_block"));
+                    } else {
+                        if (customBlock == null) continue;
+
+                        player.getAttribute(Attribute.BLOCK_BREAK_SPEED).addModifier(
+                                new AttributeModifier(new NamespacedKey("cerasis", "custom_block"),
+                                        customBlock.getBlockHardness() / customBlock.getBlockType().getHardness(),
+                                        AttributeModifier.Operation.ADD_NUMBER
+                                )
+                        );
+                    }
+                }
+
                 for (World world : Bukkit.getWorlds()) {
                     for (ItemDisplay itemDisplay : world.getEntitiesByClass(ItemDisplay.class)) {
                         if (!CustomBlock.isCustomBlock(itemDisplay)) continue;
