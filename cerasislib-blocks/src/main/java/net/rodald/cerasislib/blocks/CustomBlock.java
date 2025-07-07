@@ -2,10 +2,7 @@ package net.rodald.cerasislib.blocks;
 
 import net.rodald.cerasislib.blocks.interfaces.DirectionalBlock;
 import net.rodald.cerasislib.items.CustomItem;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
@@ -25,7 +22,16 @@ public abstract class CustomBlock extends CustomItem {
         return DEFAULT_MATERIAL;
     }
 
-    public abstract Material getBlockType();
+    public abstract @NotNull Material getBlockType();
+
+    /**
+     * Used for generating the block particles when mining the block
+     *
+     * @return The Material of the block which particle should be generated as a {@link Particle#BLOCK_CRUMBLE}.
+     * <p>
+     * The material must have a block variant.
+     */
+    public abstract @NotNull Material getParticleBlockType();
 
     @Override
     protected void prepareItem(ItemStack itemStack) {
@@ -54,6 +60,8 @@ public abstract class CustomBlock extends CustomItem {
                                 PersistentDataType.STRING,
                                 blockFace.name()
                         );
+
+                        itemDisplay.setViewRange((1 + Bukkit.getViewDistance()) * 16);
 
                         itemDisplay.setTransformation(new Transformation(
                                 new Vector3f(0, 0, 0),

@@ -12,12 +12,12 @@ import com.comphenix.protocol.wrappers.EnumWrappers;
 import net.rodald.cerasislib.blocks.interfaces.Touchable;
 import net.rodald.cerasislib.items.CustomItem;
 import org.bukkit.*;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemDisplay;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -130,7 +130,7 @@ public class BlockLibService implements Listener {
                     boolean collision = !targetBlock.getWorld()
                             .getNearbyEntities(blockBox)
                             .stream()
-                            .filter(entity -> !(entity instanceof ArmorStand))
+                            .filter(entity -> (entity instanceof LivingEntity))
                             .toList()
                             .isEmpty();
 
@@ -167,7 +167,6 @@ public class BlockLibService implements Listener {
 
                 EnumWrappers.PlayerDigType digType = packet.getPlayerDigTypes().read(0);
                 BlockPosition blockPos = packet.getBlockPositionModifier().read(0);
-                EnumWrappers.Direction direction = packet.getDirections().read(0); // Die Seite, die angeklickt wird
 
                 World world = player.getWorld();
                 Location blockLocation = blockPos.toLocation(world).add(0.5, 0.5, 0.5);
@@ -179,14 +178,16 @@ public class BlockLibService implements Listener {
                         itemDisplayLocation.setYaw(blockLocation.getYaw());
                         itemDisplayLocation.setPitch(blockLocation.getPitch());
 
-                        if (blockLocation.equals(itemDisplayLocation)) {
+                        if (blockLocation.equals(itemDisplayLocation) && CustomBlock.isCustomBlock(itemDisplay)) {
                             // START = Effekt starten
+
+                            CustomBlock customBlock = CustomBlock.getCustomBlock(itemDisplay);
                             if (digType == EnumWrappers.PlayerDigType.START_DESTROY_BLOCK) {
-                                if (particleTasks.containsKey(player)) return; // bereits aktiv
+                                if (particleTasks.containsKey(player)) return;
 
                                 int taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(instance, () -> {
-                                    spawnParticlesOnBlockFace(block, direction);
-                                }, 0L, 2L); // alle 2 Ticks
+                                    spawnParticlesOnBlockFace(block, player, customBlock.getParticleBlockType());
+                                }, 0L, 2L);
 
                                 particleTasks.put(player, taskId);
                             }
@@ -207,8 +208,8 @@ public class BlockLibService implements Listener {
         });
     }
 
-    // FIXME: Particle always spawn where the player started mining the block, not the side it is currently mined from
-    public static void spawnParticlesOnBlockFace(Block block, EnumWrappers.Direction direction) {
+    public static void spawnParticlesOnBlockFace(Block block, Player player, Material material) {
+        BlockFace blockFace = player.getTargetBlockFace((int) player.getAttribute(Attribute.BLOCK_INTERACTION_RANGE).getValue() + 1);
         World world = block.getWorld();
         BoundingBox boundingBox = block.getBoundingBox();
         Location base = boundingBox.getCenter().toLocation(world);
@@ -216,7 +217,7 @@ public class BlockLibService implements Listener {
         double offsetX = boundingBox.getWidthX() / 4;
         double offsetY = boundingBox.getHeight() / 4;
         double offsetZ = boundingBox.getWidthZ() / 4;
-        switch (direction) {
+        switch (blockFace) {
             case UP:
                 offsetY = 0;
                 base.setY(boundingBox.getMaxY() + 0.1);
@@ -241,10 +242,11 @@ public class BlockLibService implements Listener {
                 offsetX = 0.0;
                 base.setX(boundingBox.getMaxX() + 0.1);
                 break;
+            default:
+                break;
         }
-        Bukkit.broadcastMessage("Particles spawn at: " + base.toString());
-        Bukkit.broadcastMessage("With offset: (" + offsetX + "|" + offsetY + "|" + offsetZ + ")");
-        world.spawnParticle(Particle.BLOCK_CRUMBLE, base, 1, offsetX, offsetY, offsetZ, 0, Material.STONE.createBlockData());
+
+        world.spawnParticle(Particle.BLOCK_CRUMBLE, base, 1, offsetX, offsetY, offsetZ, 0, material.createBlockData());
     }
 
     private static void onTick() {
