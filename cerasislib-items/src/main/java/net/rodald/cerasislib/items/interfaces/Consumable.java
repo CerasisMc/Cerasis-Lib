@@ -13,6 +13,7 @@ public interface Consumable extends PrepareInterface {
         ItemMeta itemMeta = itemStack.getItemMeta();
         FoodComponent foodComponent = itemMeta.getFood();
 
+        foodComponent.setSaturation(getNutrition());
         foodComponent.setSaturation(getSaturation());
         foodComponent.setCanAlwaysEat(canAlwaysEat());
 

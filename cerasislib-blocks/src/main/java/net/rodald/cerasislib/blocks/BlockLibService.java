@@ -9,6 +9,7 @@ import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
 import com.comphenix.protocol.wrappers.BlockPosition;
 import com.comphenix.protocol.wrappers.EnumWrappers;
+import io.papermc.paper.event.player.PlayerPickBlockEvent;
 import net.rodald.cerasislib.blocks.interfaces.Touchable;
 import net.rodald.cerasislib.items.CustomItem;
 import org.bukkit.*;
@@ -73,6 +74,39 @@ public class BlockLibService implements Listener {
     public void onEntityExplode(EntityExplodeEvent event) {
         for (Block block : event.blockList()) {
             handleBlockBreak(block, null, null);
+        }
+    }
+
+    @EventHandler
+    private void onPlayerPickBlock(PlayerPickBlockEvent event) {
+        Player player = event.getPlayer();
+        Block block = event.getBlock();
+
+        Location blockLocation = block.getLocation().add(0.5, 0.5, 0.5);
+
+        for (Entity entity : block.getChunk().getEntities()) {
+            if (!(entity instanceof ItemDisplay itemDisplay)) continue;
+
+            Location itemDisplayLocation = itemDisplay.getLocation();
+
+            itemDisplayLocation.setYaw(blockLocation.getYaw());
+            itemDisplayLocation.setPitch(blockLocation.getPitch());
+
+            if (!blockLocation.equals(itemDisplayLocation)) continue;
+
+            ItemStack displayedItem = itemDisplay.getItemStack();
+
+            for (int i = 0; i < player.getInventory().getSize(); i++) {
+                if (!displayedItem.isSimilar(player.getInventory().getItem(i))) continue;
+
+                if (i <= 8) {
+                    player.getInventory().setHeldItemSlot(i);
+                    return;
+                }
+
+                event.setSourceSlot(i);
+                return;
+            }
         }
     }
 
