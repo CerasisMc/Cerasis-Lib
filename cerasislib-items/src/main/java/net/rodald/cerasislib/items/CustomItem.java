@@ -31,7 +31,7 @@ public abstract class CustomItem {
 
     public CustomItem() {
         for (Player player : Bukkit.getOnlinePlayers() ) {
-            player.sendMessage("Broadcast! created a new item: " + this.toString());
+            player.sendMessage("Broadcast! created a new item: " + this);
         }
         customItems.put(this.createItem(), this);
     }
@@ -101,8 +101,8 @@ public abstract class CustomItem {
         }
 
         // Try to create a new instance of the matching class
-        Bukkit.broadcastMessage("Try to create Item...");
-        Bukkit.broadcastMessage("Class: " + className);
+        Bukkit.getLogger().info("Try to create Item...");
+        Bukkit.getLogger().info("Class: " + className);
         try {
             Class<?> clazz = Class.forName(className);
             if (CustomItem.class.isAssignableFrom(clazz)) {
