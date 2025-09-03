@@ -30,9 +30,6 @@ public abstract class CustomItem {
     public abstract List<Component> getItemLore();
 
     public CustomItem() {
-        for (Player player : Bukkit.getOnlinePlayers() ) {
-            player.sendMessage("Broadcast! created a new item: " + this);
-        }
         customItems.put(this.createItem(), this);
     }
 
