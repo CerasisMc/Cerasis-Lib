@@ -15,6 +15,7 @@ import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Constructor;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -191,5 +192,56 @@ public abstract class CustomItem {
         int blue = (int) (startBlue + (endBlue - startBlue) * ratio);
 
         return TextColor.color(red, green, blue);
+    }
+
+    public static class Builder {
+        private Component displayName = Component.empty();
+        private List<Component> lore = new ArrayList<>();
+        private Material material = Material.AIR;
+        private NamespacedKey namespacedKey;
+
+        public CustomItem.Builder displayName(Component text) {
+            this.displayName = text;
+            return this;
+        }
+
+        public CustomItem.Builder lore(List<Component> lore) {
+            this.lore = lore;
+            return this;
+        }
+
+        public CustomItem.Builder material(Material material) {
+            this.material = material;
+            return this;
+        }
+
+        public CustomItem.Builder namespacedKey(NamespacedKey namespacedKey) {
+            this.namespacedKey = namespacedKey;
+            return this;
+        }
+
+        public CustomItem build() {
+            return new CustomItem() {
+                @Override
+                public @NotNull Material getMaterial() {
+                    return material;
+                }
+
+                @Override
+                public Component getItemName() {
+                    return displayName;
+                }
+
+                @Override
+                public List<Component> getItemLore() {
+                    return lore;
+                }
+
+                @Override
+                public NamespacedKey getNamespacedKey() {
+                    return namespacedKey;
+                }
+            };
+        }
     }
 }
