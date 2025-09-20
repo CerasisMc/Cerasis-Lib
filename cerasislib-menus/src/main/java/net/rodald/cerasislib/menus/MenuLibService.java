@@ -27,7 +27,7 @@ public class MenuLibService implements Listener {
     }
 
     @EventHandler
-    public void onMenuClick(InventoryClickEvent event){
+    public void onMenuClick(InventoryClickEvent event) {
         InventoryHolder holder = event.getInventory().getHolder();
         //If the inventoryholder of the inventory clicked on
         // is an instance of Menu, then gg. The reason that
@@ -46,13 +46,8 @@ public class MenuLibService implements Listener {
     }
 
     public static PlayerMenuUtility getPlayerMenuUtility(Player player) {
-        if (!(playerMenuUtilityMap.containsKey(player))) {
-
-            PlayerMenuUtility playerMenuUtility = new PlayerMenuUtility(player);
-            playerMenuUtilityMap.put(player, playerMenuUtility);
-            return playerMenuUtility;
-        } else {
-            return playerMenuUtilityMap.get(player);
-        }
+        PlayerMenuUtility playerMenuUtility = new PlayerMenuUtility(player);
+        playerMenuUtilityMap.put(player, playerMenuUtility);
+        return playerMenuUtility;
     }
 }
