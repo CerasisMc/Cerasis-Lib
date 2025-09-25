@@ -10,8 +10,10 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
 
-/*
-    Defines the behavior and attributes of all menus in our plugin
+/**
+ * Defines the behavior and attributes of all menus in our plugin.
+ * This abstract class serves as a base for all menu implementations,
+ * providing common functionality and structure for inventory-based GUIs.
  */
 public abstract class Menu implements InventoryHolder {
 
@@ -23,6 +25,13 @@ public abstract class Menu implements InventoryHolder {
     //Constructor for Menu. Pass in a PlayerMenuUtility so that
     // we have information on who's menu this is and
     // what info is to be transfered
+    
+
+    /**
+     * Constructs a new Menu with the specified PlayerMenuUtility.
+     *
+     * @param playerMenuUtility The utility class containing player-specific menu data
+     */
     public Menu(PlayerMenuUtility playerMenuUtility) {
         this.playerMenuUtility = playerMenuUtility;
     }
@@ -40,6 +49,12 @@ public abstract class Menu implements InventoryHolder {
     public abstract void setMenuItems();
 
     //When called, an inventory is created and opened for the player
+
+    /**
+     * Creates and opens the inventory menu for the player.
+     * This method initializes the inventory with the specified items
+     * and displays it to the player.
+     */
     public void open() {
         //The owner of the inventory created is the Menu itself,
         // so we are able to reverse engineer the Menu object from the
@@ -60,6 +75,11 @@ public abstract class Menu implements InventoryHolder {
     }
 
     //Helpful utility method to fill all remaining slots with "filler glass"
+
+    /**
+     * Fills empty slots in the inventory with filler glass panes.
+     * This method is used to create a clean visual appearance for menus.
+     */
     public void setFillerGlass(){
         for (int i = 0; i < getSlots(); i++) {
             if (inventory.getItem(i) == null){
@@ -67,6 +87,14 @@ public abstract class Menu implements InventoryHolder {
             }
         }
     }
+
+    /**
+     * Sets an item in a specific slot with a custom display name.
+     *
+     * @param item The ItemStack to set
+     * @param name The display name for the item
+     * @param slot The inventory slot to place the item in
+     */
     public void setSlot(ItemStack item, String name, int slot) {
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName(ChatColor.RESET + name);

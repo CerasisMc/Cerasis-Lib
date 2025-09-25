@@ -26,6 +26,12 @@ public class MenuLibService implements Listener {
         plugin.getServer().getPluginManager().registerEvents(service, plugin);
     }
 
+    /**
+     * Handles click events within custom menu inventories.
+     * Prevents item manipulation and delegates click handling to the appropriate menu instance.
+     *
+     * @param event The InventoryClickEvent to handle
+     */
     @EventHandler
     public void onMenuClick(InventoryClickEvent event) {
         InventoryHolder holder = event.getInventory().getHolder();
@@ -45,6 +51,14 @@ public class MenuLibService implements Listener {
         }
     }
 
+
+    /**
+     * Creates and stores a new PlayerMenuUtility instance for the specified player.
+     * This method ensures each player has their own menu utility for managing menu data.
+     *
+     * @param player The player to create a menu utility for
+     * @return A new PlayerMenuUtility instance associated with the player
+     */
     public static PlayerMenuUtility getPlayerMenuUtility(Player player) {
         PlayerMenuUtility playerMenuUtility = new PlayerMenuUtility(player);
         playerMenuUtilityMap.put(player, playerMenuUtility);
