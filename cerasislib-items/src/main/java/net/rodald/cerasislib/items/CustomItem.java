@@ -47,7 +47,7 @@ public abstract class CustomItem {
      * }
      * }</pre>
      *
-     * @return the {@link NamespacedKey} pointing to the custom texture
+     * @return the {@link NamespacedKey} pointing to the custom texture. {@code null} if no custom texture is used.
      */
     public abstract NamespacedKey getNamespacedKey();
 

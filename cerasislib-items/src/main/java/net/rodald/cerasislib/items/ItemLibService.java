@@ -14,6 +14,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -143,14 +144,17 @@ public class ItemLibService implements Listener {
 
     @EventHandler
     private void onPlayerQuit(PlayerQuitEvent event) {
-        ItemStack itemStack = event.getPlayer().getInventory().getItemInMainHand();
+        PlayerInventory playerInventory = event.getPlayer().getInventory();
 
-        CustomItem customItem = CustomItem.getCustomItem(itemStack);
+        if (CustomItem.getCustomItem(playerInventory.getItemInMainHand()) instanceof PlayerQuit quit) {
+            quit.handlePlayerQuitMainHand(event);
+        }
 
-        if (customItem == null) return;
-
-        if (customItem instanceof PlayerQuit playerQuit) {
-            playerQuit.handlePlayerQuit(event);
+        for (ItemStack item : playerInventory) {
+            if (CustomItem.getCustomItem(item) instanceof PlayerQuit quit) {
+                quit.handlePlayerQuitInventory(event);
+                break;
+            }
         }
     }
 
