@@ -3,6 +3,8 @@
   <component name="Encoding">
     <file url="file://$PROJECT_DIR$/cerasislib-blocks/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/cerasislib-blocks/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/cerasislib-director/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/cerasislib-director/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/cerasislib-display/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/cerasislib-display/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/cerasislib-displays/src/main/resources" charset="UTF-8" />
