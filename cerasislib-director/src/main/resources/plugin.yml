@@ -1,8 +1,0 @@
-name: cerasislib-director
-version: '$version'
-
-main: net.rodald.cerasislibDirector.CerasislibDirector
-api-version: '1.21.11'
-load: POSTWORLD
-
-authors: [ Rodald ]

@@ -1,4 +1,4 @@
-package net.rodald.cerasislibDirector.interpolate;
+package net.rodald.director.interpolate;
 
 import org.bukkit.entity.Player;
 

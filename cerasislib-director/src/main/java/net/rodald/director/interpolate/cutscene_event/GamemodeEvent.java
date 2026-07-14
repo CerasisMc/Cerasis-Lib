@@ -1,6 +1,6 @@
-package net.rodald.cerasislibDirector.interpolate.cutscene_event;
+package net.rodald.director.interpolate.cutscene_event;
 
-import net.rodald.cerasislibDirector.interpolate.CutsceneEvent;
+import net.rodald.director.interpolate.CutsceneEvent;
 import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 

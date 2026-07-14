@@ -1,7 +1,7 @@
-package net.rodald.cerasislibDirector.interpolate.cutscene_event;
+package net.rodald.director.interpolate.cutscene_event;
 
 import net.kyori.adventure.title.Title;
-import net.rodald.cerasislibDirector.interpolate.CutsceneEvent;
+import net.rodald.director.interpolate.CutsceneEvent;
 import org.bukkit.entity.Player;
 
 public class MessageEvent implements CutsceneEvent {
