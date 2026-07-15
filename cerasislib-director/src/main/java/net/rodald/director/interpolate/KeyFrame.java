@@ -1,23 +1,13 @@
 package net.rodald.director.interpolate;
 
 import org.bukkit.Location;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public record KeyFrame(Location location, int tick, Easing easing, List<CutsceneEvent> events) {
-
-    /**
-     * Constructor with null-safe event list initialization.
-     * Fixes the NullPointerException by ensuring events is never null.
-     */
-    public KeyFrame(Location location, int tick, Easing easing, List<CutsceneEvent> events) {
-        this.location = location;
-        this.tick = tick;
-        this.easing = easing;
-        this.events = events == null ? new ArrayList<>() : new ArrayList<>(events);
-    }
+public record KeyFrame(Location location, int tick, Easing easing, @NotNull List<CutsceneEvent> events) {
 
     /**
      * Creates a KeyFrame without any events.

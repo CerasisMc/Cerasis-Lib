@@ -19,7 +19,7 @@ import java.util.List;
 
 public class Camera {
     private final String id;
-    private CameraProfile cameraProfile;
+    private @NotNull CameraProfile cameraProfile;
     private final Location startLocation;
     private ItemDisplay entity;
     private final List<Player> viewers = new ArrayList<>();
@@ -27,9 +27,10 @@ public class Camera {
     public Camera(@NotNull String id, @NotNull Location startLocation) {
         this.id = id;
         this.startLocation = startLocation;
+        cameraProfile = CameraProfile.DEFAULT;
     }
 
-    public Camera(@NotNull String id, @NotNull Location startLocation, @Nullable CameraProfile cameraProfile) {
+    public Camera(@NotNull String id, @NotNull Location startLocation, @NotNull CameraProfile cameraProfile) {
         this.id = id;
         this.startLocation = startLocation;
         this.cameraProfile = cameraProfile;
@@ -37,7 +38,7 @@ public class Camera {
 
     /**
      * Teleports the camera entity to the specified location.
-     * Also synchronizes all viewers so they cant leave camera
+     * Also synchronizes all viewers so they can't leave the camera
      *
      * @param location The location to teleport the camera entity to
      */
@@ -56,13 +57,13 @@ public class Camera {
     /**
      * Spawns the camera entity at the start location.
      */
-    public void spawn() {
+    public void spawn(final float yaw, final float pitch) {
         if (isSpawned()) return;
         Bukkit.broadcastMessage("create camera");
-
+        startLocation.setRotation(yaw, pitch);
         this.entity = startLocation.getWorld().spawn(startLocation, ItemDisplay.class, itemDisplay -> {
             itemDisplay.setItemStack(new ItemStack(Material.SPYGLASS));
-            itemDisplay.setTeleportDuration(59);
+            itemDisplay.setTeleportDuration(cameraProfile.pathStabilization());
 //            itemDisplay.setInterpolationDuration(1);
 
             Transformation transformation = new Transformation(
@@ -101,7 +102,7 @@ public class Camera {
         return id;
     }
 
-    public @Nullable CameraProfile getCameraProfile() {
+    public @NotNull CameraProfile getCameraProfile() {
         return cameraProfile;
     }
 

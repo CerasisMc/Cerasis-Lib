@@ -3,6 +3,7 @@ package net.rodald.director;
 import com.destroystokyo.paper.event.player.PlayerStopSpectatingEntityEvent;
 import net.rodald.director.camera.Camera;
 import net.rodald.director.interpolate.CutsceneEvent;
+import net.rodald.director.interpolate.Easing;
 import net.rodald.director.interpolate.KeyFrame;
 import org.bukkit.Location;
 import org.bukkit.event.EventHandler;
@@ -11,6 +12,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -117,9 +119,11 @@ public class Director {
                     activeCamera.destroy();
                 }
                 activeCamera = activeShot.getCamera();
-                activeCamera.spawn();
+                KeyFrame duplicatedLast = keyFrames.getLast();
+                int pathStabilization = activeCamera.getCameraProfile().pathStabilization();
+                keyFrames.add(new KeyFrame(duplicatedLast.location(), duplicatedLast.tick() + pathStabilization, Easing.NONE, new ArrayList<>()));
                 Location startFrame = keyFrames.getFirst().location();
-                activeCamera.getEntity().setRotation(startFrame.getYaw(), startFrame.getPitch());
+                activeCamera.spawn(startFrame.getYaw(), startFrame.getPitch());
             }
 
             KeyFrame startFrame = null;
