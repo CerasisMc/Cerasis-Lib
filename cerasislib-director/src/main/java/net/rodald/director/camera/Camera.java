@@ -1,11 +1,17 @@
 package net.rodald.director.camera;
 
+import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
-import org.bukkit.entity.Interaction;
+import org.bukkit.Material;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.util.Transformation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -15,7 +21,7 @@ public class Camera {
     private final String id;
     private CameraProfile cameraProfile;
     private final Location startLocation;
-    private Interaction entity;
+    private ItemDisplay entity;
     private final List<Player> viewers = new ArrayList<>();
 
     public Camera(@NotNull String id, @NotNull Location startLocation) {
@@ -31,22 +37,20 @@ public class Camera {
 
     /**
      * Teleports the camera entity to the specified location.
-     * Also synchronizes all viewers to this entity in a 1-tick loop so they cant leave camera
+     * Also synchronizes all viewers so they cant leave camera
      *
      * @param location The location to teleport the camera entity to
-     * @return True if the teleport was successful, false if the entity is not spawned
      */
-    public boolean teleport(@NotNull Location location) {
-        if (entity == null) return false;
-        boolean success = entity.teleport(location);
+    public void teleport(@NotNull Location location) {
+        entity.teleport(location);
 
         for (Player player : viewers) {
-            if (player.isOnline() && player.getSpectatorTarget() != entity) {
+            if (player.isOnline()) {
+                player.setGameMode(GameMode.SPECTATOR);
                 player.setSpectatorTarget(entity);
             }
         }
 
-        return success;
     }
 
     /**
@@ -54,9 +58,21 @@ public class Camera {
      */
     public void spawn() {
         if (isSpawned()) return;
-        this.entity = startLocation.getWorld().spawn(startLocation, Interaction.class, interaction -> {
-            interaction.setInteractionHeight(0);
-            interaction.setInteractionWidth(0);
+        Bukkit.broadcastMessage("create camera");
+
+        this.entity = startLocation.getWorld().spawn(startLocation, ItemDisplay.class, itemDisplay -> {
+            itemDisplay.setItemStack(new ItemStack(Material.SPYGLASS));
+            itemDisplay.setTeleportDuration(59);
+//            itemDisplay.setInterpolationDuration(1);
+
+            Transformation transformation = new Transformation(
+                    new Vector3f(0, 0, 0),
+                    new Quaternionf().rotationX((float) Math.toRadians(-90)),
+                    new Vector3f(2, 2, 2),
+                    new Quaternionf()
+            );
+
+            itemDisplay.setTransformation(transformation);
         });
     }
 
@@ -64,7 +80,11 @@ public class Camera {
      * Destroys the camera entity.
      */
     public void destroy() {
+        Bukkit.broadcastMessage("destroy camera");
         if (entity != null) {
+            for (Player player : viewers) {
+                player.setSpectatorTarget(null);
+            }
             entity.remove();
             entity = null;
         }
@@ -114,20 +134,6 @@ public class Camera {
     }
 
     /**
-     * Starts the camera for all viewers. Spawns the entity if it isn't already spawned.
-     */
-    public void play() {
-        if (!isSpawned()) {
-            this.spawn();
-        }
-
-        for (Player player : viewers) {
-            player.setGameMode(GameMode.SPECTATOR);
-            player.setSpectatorTarget(entity);
-        }
-    }
-
-    /**
      * Removes a viewer from this camera and restores their gamemode.
      */
     public void removeViewer(@NotNull Player player) {
@@ -139,5 +145,9 @@ public class Camera {
 
     public @NotNull List<Player> getViewers() {
         return Collections.unmodifiableList(viewers);
+    }
+
+    public ItemDisplay getEntity() {
+        return entity;
     }
 }
