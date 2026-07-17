@@ -2,10 +2,12 @@ package net.rodald.director;
 
 import com.destroystokyo.paper.event.player.PlayerStopSpectatingEntityEvent;
 import net.rodald.director.camera.Camera;
+import net.rodald.director.camera.CameraProfile;
 import net.rodald.director.interpolate.CutsceneEvent;
-import net.rodald.director.interpolate.Easing;
+import net.rodald.director.interpolate.EasingType;
 import net.rodald.director.interpolate.KeyFrame;
 import org.bukkit.Location;
+import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -19,11 +21,18 @@ import java.util.Map;
 
 public class Director {
 
-    private final JavaPlugin plugin;
+    private final JavaPlugin instance;
     private final Map<String, PlaybackSession> activeSessions = new HashMap<>();
 
-    public Director(JavaPlugin plugin) {
-        this.plugin = plugin;
+    public Director(JavaPlugin instance) {
+        this.instance = instance;
+
+        ConfigurationSerialization.registerClass(KeyFrame.class);
+        ConfigurationSerialization.registerClass(CameraProfile.class);
+        ConfigurationSerialization.registerClass(Camera.class);
+        ConfigurationSerialization.registerClass(Shot.class);
+        ConfigurationSerialization.registerClass(Scene.class);
+        ConfigurationSerialization.registerClass(Timeline.class);
     }
 
     /**
@@ -55,6 +64,15 @@ public class Director {
         return activeSessions.containsKey(sessionId);
     }
 
+    public void save(Timeline timeline) {
+        instance.getConfig().set("timelines." + timeline.getId(), timeline);
+        instance.saveConfig();
+    }
+
+    public Timeline load(String id) {
+        return (Timeline) instance.getConfig().get("timelines." + id);
+    }
+
     /**
      * Internal playback session that manages the timeline execution.
      */
@@ -74,7 +92,7 @@ public class Director {
             this.timeline = timeline;
             this.sessionId = sessionId;
 
-            plugin.getServer().getPluginManager().registerEvents(this, plugin);
+            instance.getServer().getPluginManager().registerEvents(this, instance);
         }
 
         @EventHandler
@@ -97,7 +115,7 @@ public class Director {
                         stop();
                     }
                 }
-            }.runTaskTimer(plugin, 0L, 1L);
+            }.runTaskTimer(instance, 0L, 1L);
         }
 
         /**
@@ -107,8 +125,6 @@ public class Director {
         private boolean tick() {
             Scene currentScene = timeline.getScenes().get(currentSceneIndex);
             Shot activeShot = currentScene.getShots().get(currentShotIndex);
-
-
 
             List<KeyFrame> keyFrames = activeShot.getKeyFrames();
 
@@ -121,7 +137,7 @@ public class Director {
                 activeCamera = activeShot.getCamera();
                 KeyFrame duplicatedLast = keyFrames.getLast();
                 int pathStabilization = activeCamera.getCameraProfile().pathStabilization();
-                keyFrames.add(new KeyFrame(duplicatedLast.location(), duplicatedLast.tick() + pathStabilization, Easing.NONE, new ArrayList<>()));
+                keyFrames.add(new KeyFrame(duplicatedLast.location(), duplicatedLast.tick() + pathStabilization, EasingType.NONE, new ArrayList<>()));
                 Location startFrame = keyFrames.getFirst().location();
                 activeCamera.spawn(startFrame.getYaw(), startFrame.getPitch());
             }
@@ -154,8 +170,8 @@ public class Director {
             }
 
             if (startFrame != null && endFrame != null) {
-                int duration = endFrame.tick() - startFrame.tick();
-                int elapsed = currentTick - startFrame.tick();
+                long duration = endFrame.tick() - startFrame.tick();
+                long elapsed = currentTick - startFrame.tick();
                 double t = duration > 0 ? (double) elapsed / duration : 1.0;
                 double eased = endFrame.easing().apply(t);
 

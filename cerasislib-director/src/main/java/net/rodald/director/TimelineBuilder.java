@@ -2,7 +2,7 @@ package net.rodald.director;
 
 import net.rodald.director.camera.Camera;
 import net.rodald.director.interpolate.CutsceneEvent;
-import net.rodald.director.interpolate.Easing;
+import net.rodald.director.interpolate.EasingType;
 import net.rodald.director.interpolate.KeyFrame;
 import org.bukkit.Location;
 
@@ -77,7 +77,7 @@ public class TimelineBuilder {
     /**
      * Adds a keyframe to the current shot.
      */
-    public TimelineBuilder addKeyFrame(int tick, Location location, Easing easing) {
+    public TimelineBuilder addKeyFrame(int tick, Location location, EasingType easing) {
         if (currentShot == null) {
             throw new IllegalStateException("Cannot add keyframe without an active shot. Call startShot() first.");
         }
@@ -91,7 +91,7 @@ public class TimelineBuilder {
      * Adds a keyframe with linear easing.
      */
     public TimelineBuilder addKeyFrame(int tick, Location location) {
-        return addKeyFrame(tick, location, Easing.LINEAR);
+        return addKeyFrame(tick, location, EasingType.LINEAR);
     }
 
     /**

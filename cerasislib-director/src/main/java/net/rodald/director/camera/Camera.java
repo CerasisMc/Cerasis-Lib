@@ -4,6 +4,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.configuration.serialization.ConfigurationSerializable;
+import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -13,11 +15,10 @@ import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
-public class Camera {
+@SerializableAs("Camera")
+public class Camera implements ConfigurationSerializable {
     private final String id;
     private @NotNull CameraProfile cameraProfile;
     private final Location startLocation;
@@ -25,9 +26,7 @@ public class Camera {
     private final List<Player> viewers = new ArrayList<>();
 
     public Camera(@NotNull String id, @NotNull Location startLocation) {
-        this.id = id;
-        this.startLocation = startLocation;
-        cameraProfile = CameraProfile.DEFAULT;
+        this(id, startLocation, CameraProfile.DEFAULT);
     }
 
     public Camera(@NotNull String id, @NotNull Location startLocation, @NotNull CameraProfile cameraProfile) {
@@ -150,5 +149,24 @@ public class Camera {
 
     public ItemDisplay getEntity() {
         return entity;
+    }
+
+    @Override
+    public @NotNull Map<String, Object> serialize() {
+        Map<String, Object> data = new HashMap<>();
+
+        data.put("id", id);
+        data.put("startLocation", startLocation);
+        data.put("cameraProfile", cameraProfile);
+
+        return data;
+    }
+
+    public static Camera deserialize(@NotNull Map<String, Object> args) {
+        return new Camera(
+                (String) args.get("id"),
+                (Location) args.get("startLocation"),
+                (CameraProfile) args.get("cameraProfile")
+        );
     }
 }
