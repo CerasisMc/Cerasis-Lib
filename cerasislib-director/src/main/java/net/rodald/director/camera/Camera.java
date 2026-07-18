@@ -1,38 +1,33 @@
 package net.rodald.director.camera;
 
-import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.configuration.serialization.ConfigurationSerializable;
-import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Transformation;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+import org.jspecify.annotations.Nullable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
-@SerializableAs("Camera")
-public class Camera implements ConfigurationSerializable {
-    private final String id;
-    private @NotNull CameraProfile cameraProfile;
-    private final Location startLocation;
-    private ItemDisplay entity;
-    private final List<Player> viewers = new ArrayList<>();
-
+public record Camera(CameraContext cameraContext) {
     public Camera(@NotNull String id, @NotNull Location startLocation) {
         this(id, startLocation, CameraProfile.DEFAULT);
     }
 
     public Camera(@NotNull String id, @NotNull Location startLocation, @NotNull CameraProfile cameraProfile) {
-        this.id = id;
-        this.startLocation = startLocation;
-        this.cameraProfile = cameraProfile;
+        this(new CameraContext(id, cameraProfile, startLocation, new AtomicReference<>(), new ArrayList<>()));
+    }
+
+    public Camera(@NotNull CameraContext cameraContext) {
+        this.cameraContext = cameraContext;
     }
 
     /**
@@ -42,15 +37,18 @@ public class Camera implements ConfigurationSerializable {
      * @param location The location to teleport the camera entity to
      */
     public void teleport(@NotNull Location location) {
+        if (!isSpawned()) return;
+
+        // thead safety & optimization
+        ItemDisplay entity = getEntity();
         entity.teleport(location);
 
-        for (Player player : viewers) {
+        for (Player player : cameraContext.viewers()) {
             if (player.isOnline()) {
                 player.setGameMode(GameMode.SPECTATOR);
                 player.setSpectatorTarget(entity);
             }
         }
-
     }
 
     /**
@@ -58,12 +56,10 @@ public class Camera implements ConfigurationSerializable {
      */
     public void spawn(final float yaw, final float pitch) {
         if (isSpawned()) return;
-        Bukkit.broadcastMessage("create camera");
-        startLocation.setRotation(yaw, pitch);
-        this.entity = startLocation.getWorld().spawn(startLocation, ItemDisplay.class, itemDisplay -> {
+        cameraContext.startLocation().setRotation(yaw, pitch);
+        setEntity(cameraContext.startLocation().getWorld().spawn(cameraContext.startLocation(), ItemDisplay.class, itemDisplay -> {
             itemDisplay.setItemStack(new ItemStack(Material.SPYGLASS));
-            itemDisplay.setTeleportDuration(cameraProfile.pathStabilization());
-//            itemDisplay.setInterpolationDuration(1);
+            itemDisplay.setTeleportDuration(cameraContext.cameraProfile().pathStabilization());
 
             Transformation transformation = new Transformation(
                     new Vector3f(0, 0, 0),
@@ -73,20 +69,19 @@ public class Camera implements ConfigurationSerializable {
             );
 
             itemDisplay.setTransformation(transformation);
-        });
+        }));
     }
 
     /**
      * Destroys the camera entity.
      */
     public void destroy() {
-        Bukkit.broadcastMessage("destroy camera");
-        if (entity != null) {
-            for (Player player : viewers) {
+        if (getEntity() != null) {
+            for (Player player : cameraContext.viewers()) {
                 player.setSpectatorTarget(null);
             }
-            entity.remove();
-            entity = null;
+            getEntity().remove();
+            setEntity(null);
         }
     }
 
@@ -94,15 +89,15 @@ public class Camera implements ConfigurationSerializable {
      * Returns whether the camera entity is currently spawned.
      */
     public boolean isSpawned() {
-        return entity != null && entity.isValid();
+        return getEntity() != null && getEntity().isValid();
     }
 
     public @NotNull String getId() {
-        return id;
+        return cameraContext.id();
     }
 
     public @NotNull CameraProfile getCameraProfile() {
-        return cameraProfile;
+        return cameraContext.cameraProfile();
     }
 
     /**
@@ -110,26 +105,12 @@ public class Camera implements ConfigurationSerializable {
      * Returns the start location if the entity is not spawned.
      */
     public @NotNull Location getLocation() {
-        return entity != null ? entity.getLocation() : startLocation.clone();
-    }
-
-    public void setCameraProfile(@Nullable CameraProfile cameraProfile) {
-        this.cameraProfile = cameraProfile;
-    }
-
-    /**
-     * Teleports the camera entity to the given location.
-     * Has no effect if the entity is not spawned.
-     */
-    public void setLocation(@NotNull Location location) {
-        if (entity != null) {
-            entity.teleport(location);
-        }
+        return isSpawned() ? getEntity().getLocation() : cameraContext.startLocation().clone();
     }
 
     public void addViewer(@NotNull Player player) {
-        if (!viewers.contains(player)) {
-            viewers.add(player);
+        if (!cameraContext.viewers().contains(player)) {
+            cameraContext.viewers().add(player);
         }
     }
 
@@ -137,36 +118,20 @@ public class Camera implements ConfigurationSerializable {
      * Removes a viewer from this camera and restores their gamemode.
      */
     public void removeViewer(@NotNull Player player) {
-        if (viewers.remove(player)) {
-            player.setGameMode(GameMode.SURVIVAL);
+        if (cameraContext.viewers().remove(player)) {
             player.setSpectatorTarget(null);
         }
     }
 
     public @NotNull List<Player> getViewers() {
-        return Collections.unmodifiableList(viewers);
+        return Collections.unmodifiableList(cameraContext.viewers());
     }
 
-    public ItemDisplay getEntity() {
-        return entity;
+    public @Nullable ItemDisplay getEntity() {
+        return cameraContext.entity().get();
     }
 
-    @Override
-    public @NotNull Map<String, Object> serialize() {
-        Map<String, Object> data = new HashMap<>();
-
-        data.put("id", id);
-        data.put("startLocation", startLocation);
-        data.put("cameraProfile", cameraProfile);
-
-        return data;
-    }
-
-    public static Camera deserialize(@NotNull Map<String, Object> args) {
-        return new Camera(
-                (String) args.get("id"),
-                (Location) args.get("startLocation"),
-                (CameraProfile) args.get("cameraProfile")
-        );
+    public void setEntity(@Nullable ItemDisplay entity) {
+        cameraContext.entity().set(entity);
     }
 }

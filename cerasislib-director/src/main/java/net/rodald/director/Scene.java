@@ -7,30 +7,24 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 
 @SerializableAs("Scene")
-public class Scene implements ConfigurationSerializable {
-    private final String id;
-
-    private final List<Shot> shots = new ArrayList<>();
+public record Scene(String id, List<Shot> shots) implements ConfigurationSerializable {
     public Scene(String id) {
-        this.id = id;
+        this(id, new ArrayList<>());
     }
 
     public Scene(String id, List<Shot> shots) {
         this.id = id;
+        this.shots = new ArrayList<>();
         this.shots.addAll(shots);
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public List<Shot> getShots() {
+    @Override
+    public List<Shot> shots() {
         return Collections.unmodifiableList(shots);
     }
 
-    public Scene addShot(Shot shot) {
+    public void addShot(Shot shot) {
         shots.add(shot);
-        return this;
     }
 
     /**

@@ -10,30 +10,15 @@ import java.util.List;
 import java.util.Map;
 
 @SerializableAs("Timeline")
-public class Timeline implements ConfigurationSerializable {
-    private final String id;
-    private final List<Scene> scenes = new ArrayList<>();
+public record Timeline(String id, List<Scene> scenes) implements ConfigurationSerializable {
 
     public Timeline(String id) {
-        this.id = id;
+        this(id, new ArrayList<>());
     }
 
-    public Timeline(String id, List<Scene> scenes) {
-        this.id = id;
-        this.scenes.addAll(scenes);
-    }
 
-    public String getId() {
-        return id;
-    }
-
-    public List<Scene> getScenes() {
-        return scenes;
-    }
-
-    public Timeline addScene(Scene scene) {
+    public void addScene(Scene scene) {
         scenes.add(scene);
-        return this;
     }
 
     public long getDuration() {

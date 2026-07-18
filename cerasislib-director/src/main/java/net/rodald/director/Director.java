@@ -2,6 +2,7 @@ package net.rodald.director;
 
 import com.destroystokyo.paper.event.player.PlayerStopSpectatingEntityEvent;
 import net.rodald.director.camera.Camera;
+import net.rodald.director.camera.CameraContext;
 import net.rodald.director.camera.CameraProfile;
 import net.rodald.director.interpolate.CutsceneEvent;
 import net.rodald.director.interpolate.EasingType;
@@ -29,7 +30,7 @@ public class Director {
 
         ConfigurationSerialization.registerClass(KeyFrame.class);
         ConfigurationSerialization.registerClass(CameraProfile.class);
-        ConfigurationSerialization.registerClass(Camera.class);
+        ConfigurationSerialization.registerClass(CameraContext.class);
         ConfigurationSerialization.registerClass(Shot.class);
         ConfigurationSerialization.registerClass(Scene.class);
         ConfigurationSerialization.registerClass(Timeline.class);
@@ -40,7 +41,7 @@ public class Director {
      * Returns the session ID for tracking.
      */
     public String direct(Timeline timeline) {
-        String sessionId = timeline.getId() + "_" + System.currentTimeMillis();
+        String sessionId = timeline.id() + "_" + System.currentTimeMillis();
         PlaybackSession session = new PlaybackSession(timeline, sessionId);
         activeSessions.put(sessionId, session);
         session.start();
@@ -65,7 +66,7 @@ public class Director {
     }
 
     public void save(Timeline timeline) {
-        instance.getConfig().set("timelines." + timeline.getId(), timeline);
+        instance.getConfig().set("timelines." + timeline.id(), timeline);
         instance.saveConfig();
     }
 
@@ -103,7 +104,7 @@ public class Director {
         }
 
         public void start() {
-            if (timeline.getScenes().isEmpty()) {
+            if (timeline.scenes().isEmpty()) {
                 activeSessions.remove(sessionId);
                 return;
             }
@@ -123,18 +124,18 @@ public class Director {
          * Returns false when the timeline is complete.
          */
         private boolean tick() {
-            Scene currentScene = timeline.getScenes().get(currentSceneIndex);
-            Shot activeShot = currentScene.getShots().get(currentShotIndex);
+            Scene currentScene = timeline.scenes().get(currentSceneIndex);
+            Shot activeShot = currentScene.shots().get(currentShotIndex);
 
-            List<KeyFrame> keyFrames = activeShot.getKeyFrames();
+            List<KeyFrame> keyFrames = activeShot.keyFrames();
 
             // update camera
-            if (activeCamera != activeShot.getCamera()) {
+            if (activeCamera != activeShot.camera()) {
 
                 if (activeCamera != null) {
                     activeCamera.destroy();
                 }
-                activeCamera = activeShot.getCamera();
+                activeCamera = activeShot.camera();
                 KeyFrame duplicatedLast = keyFrames.getLast();
                 int pathStabilization = activeCamera.getCameraProfile().pathStabilization();
                 keyFrames.add(new KeyFrame(duplicatedLast.location(), duplicatedLast.tick() + pathStabilization, EasingType.NONE, new ArrayList<>()));
@@ -149,7 +150,7 @@ public class Director {
                 KeyFrame current = keyFrames.get(i);
                 KeyFrame next = (i + 1 < keyFrames.size()) ? keyFrames.get(i + 1) : null;
 
-                // also run event if its on the last frame
+                // also run event if it's on the last frame
                 boolean isInCurrentFrame = (next == null)
                         ? (currentTick == current.tick())
                         : (currentTick >= current.tick() && currentTick < next.tick());
@@ -184,12 +185,12 @@ public class Director {
                 currentTick = 0;
             }
 
-            if (currentShotIndex >= currentScene.getShots().size()) {
+            if (currentShotIndex >= currentScene.shots().size()) {
                 currentSceneIndex++;
                 currentShotIndex = 0;
             }
 
-            if (currentSceneIndex >= timeline.getScenes().size()) {
+            if (currentSceneIndex >= timeline.scenes().size()) {
 
                 // destroy camera here bc other destroy method won't be called if return false
                 activeCamera.destroy();

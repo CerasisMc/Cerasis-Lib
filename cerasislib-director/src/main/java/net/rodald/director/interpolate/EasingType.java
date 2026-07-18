@@ -24,7 +24,6 @@ public enum EasingType {
         this.function = function;
     }
 
-    // Führt die mathematische Berechnung aus
     public double apply(double t) {
         return this.function.apply(t);
     }

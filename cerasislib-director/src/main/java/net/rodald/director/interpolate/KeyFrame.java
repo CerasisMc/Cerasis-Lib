@@ -10,22 +10,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 
 @SerializableAs("KeyFrame")
-public record KeyFrame(Location location, long tick, EasingType easing,
+public record KeyFrame(@NotNull Location location, long tick, @NotNull EasingType easing,
                        @NotNull List<CutsceneEvent> events) implements ConfigurationSerializable {
-
-    /**
-     * Creates a KeyFrame without any events.
-     */
-    public static KeyFrame of(long tick, Location location, EasingType easing) {
-        return new KeyFrame(location, tick, easing, new ArrayList<>());
-    }
-
-    /**
-     * Creates a KeyFrame with linear easing and no events.
-     */
-    public static KeyFrame of(long tick, Location location) {
-        return new KeyFrame(location, tick, EasingType.LINEAR, new ArrayList<>());
-    }
 
     @Override
     public Location location() {
@@ -35,14 +21,6 @@ public record KeyFrame(Location location, long tick, EasingType easing,
     @Override
     public @NotNull List<CutsceneEvent> events() {
         return Collections.unmodifiableList(events);
-    }
-
-    /**
-     * Adds an event to this keyframe.
-     * Note: This modifies the internal list.
-     */
-    public void addEvent(CutsceneEvent event) {
-        this.events.add(event);
     }
 
     @Utility
