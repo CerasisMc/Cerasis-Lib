@@ -8,10 +8,11 @@
     </parent>
 
     <artifactId>cerasislib-items</artifactId>
+    <version>${cerasislib-items.version}</version>
     <packaging>jar</packaging>
 
     <name>cerasislib-items</name>
-    <url>http://maven.apache.org</url>
+    <url>https://maven.apache.org</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -67,12 +68,4 @@
             <scope>provided</scope>
         </dependency>
     </dependencies>
-
-    <distributionManagement>
-        <repository>
-            <id>github</id>
-            <name>GitHub Packages</name>
-            <url>https://github.com</url>
-        </repository>
-    </distributionManagement>
 </project>

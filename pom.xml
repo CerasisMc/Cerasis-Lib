@@ -19,6 +19,11 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <cerasislib-items.version>1.0.0-SNAPSHOT</cerasislib-items.version>
+        <cerasislib-blocks.version>1.0.0-SNAPSHOT</cerasislib-blocks.version>
+        <cerasislib-director.version>1.0.0-SNAPSHOT</cerasislib-director.version>
+        <cerasislib-display.version>1.0.0-SNAPSHOT</cerasislib-display.version>
+        <cerasislib-menus.version>1.0.0-SNAPSHOT</cerasislib-menus.version>
     </properties>
 
     <repositories>
@@ -57,4 +62,11 @@
         <!--      <scope>test</scope>-->
         <!--    </dependency>-->
     </dependencies>
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/CerasisMc/Cerasis-Lib</url>
+        </repository>
+    </distributionManagement>
 </project>
