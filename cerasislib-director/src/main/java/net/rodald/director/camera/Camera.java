@@ -18,12 +18,12 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public record Camera(CameraContext cameraContext) {
-    public Camera(@NotNull String id, @NotNull Location startLocation) {
-        this(id, startLocation, CameraProfile.DEFAULT);
+    public Camera(@NotNull String id) {
+        this(id, CameraProfile.DEFAULT);
     }
 
-    public Camera(@NotNull String id, @NotNull Location startLocation, @NotNull CameraProfile cameraProfile) {
-        this(new CameraContext(id, cameraProfile, startLocation, new AtomicReference<>(), new ArrayList<>()));
+    public Camera(@NotNull String id, @NotNull CameraProfile cameraProfile) {
+        this(new CameraContext(id, cameraProfile, new AtomicReference<>(), new ArrayList<>()));
     }
 
     public Camera(@NotNull CameraContext cameraContext) {
@@ -54,10 +54,9 @@ public record Camera(CameraContext cameraContext) {
     /**
      * Spawns the camera entity at the start location.
      */
-    public void spawn(final float yaw, final float pitch) {
+    public void spawn(final Location spawnLocation) {
         if (isSpawned()) return;
-        cameraContext.startLocation().setRotation(yaw, pitch);
-        setEntity(cameraContext.startLocation().getWorld().spawn(cameraContext.startLocation(), ItemDisplay.class, itemDisplay -> {
+        setEntity(spawnLocation.getWorld().spawn(spawnLocation, ItemDisplay.class, itemDisplay -> {
             itemDisplay.setItemStack(new ItemStack(Material.SPYGLASS));
             itemDisplay.setTeleportDuration(cameraContext.cameraProfile().pathStabilization());
 
@@ -104,8 +103,8 @@ public record Camera(CameraContext cameraContext) {
      * Returns the current location of the camera entity.
      * Returns the start location if the entity is not spawned.
      */
-    public @NotNull Location getLocation() {
-        return isSpawned() ? getEntity().getLocation() : cameraContext.startLocation().clone();
+    public @Nullable Location getLocation() {
+        return isSpawned() ? getEntity().getLocation() : null;
     }
 
     public void addViewer(@NotNull Player player) {

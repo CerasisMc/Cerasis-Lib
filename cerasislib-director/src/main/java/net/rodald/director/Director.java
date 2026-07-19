@@ -7,7 +7,9 @@ import net.rodald.director.camera.CameraProfile;
 import net.rodald.director.interpolate.CutsceneEvent;
 import net.rodald.director.interpolate.EasingType;
 import net.rodald.director.interpolate.KeyFrame;
+import org.bukkit.Color;
 import org.bukkit.Location;
+import org.bukkit.Particle;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -140,12 +142,13 @@ public class Director {
                 int pathStabilization = activeCamera.getCameraProfile().pathStabilization();
                 keyFrames.add(new KeyFrame(duplicatedLast.location(), duplicatedLast.tick() + pathStabilization, EasingType.NONE, new ArrayList<>()));
                 Location startFrame = keyFrames.getFirst().location();
-                activeCamera.spawn(startFrame.getYaw(), startFrame.getPitch());
+                activeCamera.spawn(startFrame.clone());
             }
 
             KeyFrame startFrame = null;
             KeyFrame endFrame = null;
 
+            // TODO: don't use linear search here
             for (int i = 0; i < keyFrames.size(); i++) {
                 KeyFrame current = keyFrames.get(i);
                 KeyFrame next = (i + 1 < keyFrames.size()) ? keyFrames.get(i + 1) : null;
@@ -168,6 +171,7 @@ public class Director {
                     }
                     break;
                 }
+
             }
 
             if (startFrame != null && endFrame != null) {
@@ -199,6 +203,19 @@ public class Director {
 
             currentTick++;
             return true;
+        }
+
+        private void renderDebugPath(Location start, Location end) {
+            double distance = start.distance(end);
+            final float particleDensity = 0.5f; // low = denser, high = scattered
+            double step = particleDensity / distance;
+            for (double t = 0; t < 1; t += step) {
+                start.getWorld().spawnParticle(
+                        Particle.DUST, interpolate(start, end, t),
+                        1, 0.0, 0.0, 0.0, 0.0,
+                        new Particle.DustOptions(Color.RED, 1), true
+                );
+            }
         }
 
         /**
