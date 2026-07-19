@@ -8,9 +8,10 @@
     <packaging>pom</packaging>
 
     <name>cerasislib</name>
-    <url>http://maven.apache.org</url>
+    <url>https://maven.apache.org</url>
     <modules>
         <module>cerasislib-blocks</module>
+        <module>cerasislib-director</module>
         <module>cerasislib-display</module>
         <module>cerasislib-items</module>
         <module>cerasislib-menus</module>
