@@ -1,6 +1,6 @@
 package net.rodald.cerasislib.blocks;
 
-import net.rodald.cerasislib.blocks.interfaces.DirectionalBlock;
+import net.rodald.cerasislib.blocks.interfaces.Directional;
 import net.rodald.cerasislib.items.CustomItem;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -57,6 +57,11 @@ public abstract class CustomBlock extends CustomItem {
      */
     public abstract @NotNull Material getParticleBlockType();
 
+    /**
+     * @return if the block can be placed inside entities
+     */
+    public abstract boolean isCollidable();
+
     @Override
     protected void prepareItem(ItemStack itemStack) {
         ItemMeta meta = itemStack.getItemMeta();
@@ -76,7 +81,7 @@ public abstract class CustomBlock extends CustomItem {
         location.getWorld()
                 .spawn(location.clone().add(.5f, .5f, .5f), ItemDisplay.class, itemDisplay -> {
                     itemDisplay.setItemStack(this.createItem());
-                    if (this instanceof DirectionalBlock) {
+                    if (this instanceof Directional) {
                         BlockFace blockFace = player.getFacing();
 
                         itemDisplay.getPersistentDataContainer().set(

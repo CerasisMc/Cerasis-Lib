@@ -10,7 +10,7 @@ import com.comphenix.protocol.events.PacketEvent;
 import com.comphenix.protocol.wrappers.BlockPosition;
 import com.comphenix.protocol.wrappers.EnumWrappers;
 import io.papermc.paper.event.player.PlayerPickBlockEvent;
-import net.rodald.cerasislib.blocks.interfaces.Touchable;
+import net.rodald.cerasislib.blocks.interfaces.Steppable;
 import net.rodald.cerasislib.items.CustomItem;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
@@ -54,7 +54,12 @@ public class BlockLibService implements Listener {
         plugin.getServer().getPluginManager().registerEvents(service, plugin);
         interceptPackets();
 
-        onTick();
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                tick();
+            }
+        }.runTaskTimer(instance, 0L, 1L);
     }
 
     @EventHandler
@@ -196,14 +201,17 @@ public class BlockLibService implements Listener {
         Location placeLocation = targetBlock.getLocation();
 
         // bounding box tests
-        BoundingBox blockBox = BoundingBox.of(targetBlock);
-        boolean collision = targetBlock.getWorld()
-                .getNearbyEntities(blockBox)
-                .stream()
-                .noneMatch(entity -> (entity instanceof LivingEntity));
+        if (customBlock.isCollidable()) {
+            BoundingBox blockBox = BoundingBox.of(targetBlock);
+            boolean collision = !targetBlock.getWorld()
+                    .getNearbyEntities(blockBox)
+                    .stream()
+                    .filter(entity -> (entity instanceof LivingEntity))
+                    .toList()
+                    .isEmpty();
 
-        if (collision) return;
-
+            if (collision) return;
+        }
 
         // place custom block: use scheduler to prevent block from placing twice
         Bukkit.getScheduler().runTask(instance, () -> {
@@ -312,71 +320,67 @@ public class BlockLibService implements Listener {
         world.spawnParticle(Particle.BLOCK_CRUMBLE, base, 1, offsetX, offsetY, offsetZ, 0, material.createBlockData());
     }
 
-    private static void onTick() {
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                // fail check in case the player manages to glitch the block break speed system (It's pretty easy)
-                for (Player player : Bukkit.getOnlinePlayers()) {
-                    Block block = player.getTargetBlockExact((int) (player.getAttribute(Attribute.BLOCK_INTERACTION_RANGE).getValue() + 1));
-                    CustomBlock customBlock = CustomBlock.getCustomBlock(block);
-                    // still remove his mining speed if player is looking at normal block
-                    if (player.getAttribute(Attribute.BLOCK_BREAK_SPEED)
-                            .getModifier(new NamespacedKey("cerasis", "custom_block")) != null) {
-                        if (customBlock != null) continue;
+    private static void tick() {
 
-                        player.getAttribute(Attribute.BLOCK_BREAK_SPEED).removeModifier(new NamespacedKey("cerasis", "custom_block"));
-                    } else {
-                        if (customBlock == null) continue;
+        // fail check in case the player manages to glitch the block break speed system (It's pretty easy)
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            Block block = player.getTargetBlockExact((int) (player.getAttribute(Attribute.BLOCK_INTERACTION_RANGE).getValue() + 1));
+            CustomBlock customBlock = CustomBlock.getCustomBlock(block);
+            // still remove his mining speed if player is looking at normal block
+            if (player.getAttribute(Attribute.BLOCK_BREAK_SPEED)
+                    .getModifier(new NamespacedKey("cerasis", "custom_block")) != null) {
+                if (customBlock != null) continue;
+
+                player.getAttribute(Attribute.BLOCK_BREAK_SPEED).removeModifier(new NamespacedKey("cerasis", "custom_block"));
+            } else {
+                if (customBlock == null) continue;
 
 
-                        player.getAttribute(Attribute.BLOCK_BREAK_SPEED).addModifier(
-                                new AttributeModifier(new NamespacedKey("cerasis", "custom_block"),
-                                        (customBlock.getBoundingBoxBlock().getHardness() / Math.max(0.001d, customBlock.getHardness())) - 1,
-                                        AttributeModifier.Operation.MULTIPLY_SCALAR_1
-                                )
-                        );
+                player.getAttribute(Attribute.BLOCK_BREAK_SPEED).addModifier(
+                        new AttributeModifier(new NamespacedKey("cerasis", "custom_block"),
+                                (customBlock.getBoundingBoxBlock().getHardness() / Math.max(0.001d, customBlock.getHardness())) - 1,
+                                AttributeModifier.Operation.MULTIPLY_SCALAR_1
+                        )
+                );
+            }
+        }
+
+        for (World world : Bukkit.getWorlds()) {
+            for (ItemDisplay itemDisplay : world.getEntitiesByClass(ItemDisplay.class)) {
+                if (!CustomBlock.isCustomBlock(itemDisplay)) continue;
+
+                CustomBlock customBlock = CustomBlock.getCustomBlock(itemDisplay);
+                if (!(customBlock instanceof Steppable steppable)) continue;
+                Block block = itemDisplay.getLocation().getBlock();
+                Location blockLocation = block.getLocation().add(0.5, 0.5, 0.5);
+
+                for (Entity entity : world.getNearbyEntities(blockLocation, 0.5, 0.5, 0.5)) {
+                    if (!entity.isTicking()) continue;
+
+                    switch (entity.getType()) {
+                        case ITEM_DISPLAY, TEXT_DISPLAY, BLOCK_DISPLAY,
+                             ITEM_FRAME, GLOW_ITEM_FRAME, ARMOR_STAND -> {
+                            continue;
+                        }
                     }
-                }
 
-                for (World world : Bukkit.getWorlds()) {
-                    for (ItemDisplay itemDisplay : world.getEntitiesByClass(ItemDisplay.class)) {
-                        if (!CustomBlock.isCustomBlock(itemDisplay)) continue;
-
-                        CustomBlock customBlock = CustomBlock.getCustomBlock(itemDisplay);
-                        if (!(customBlock instanceof Touchable touchable)) continue;
-                        Block block = itemDisplay.getLocation().getBlock();
-                        Location blockLocation = block.getLocation().add(0.5, 0.5, 0.5);
-
-                        for (Entity entity : world.getNearbyEntities(blockLocation, 0.5, 0.5, 0.5)) {
-                            if (!entity.isTicking()) continue;
-
-                            switch (entity.getType()) {
-                                case ITEM_DISPLAY, TEXT_DISPLAY, BLOCK_DISPLAY,
-                                     ITEM_FRAME, GLOW_ITEM_FRAME, ARMOR_STAND -> {
-                                    continue;
-                                }
-                            }
-
-                            Collection<BoundingBox> collisionShapes = block.getCollisionShape().getBoundingBoxes();
-                            // for some reason collision shapes can be empty if the block has a "primitive shape" (such as slabs)
-                            if (collisionShapes.isEmpty()) {
-                                if (isStandingOn(block.getBoundingBox(), entity.getBoundingBox())) {
-                                    touchable.handleSteppedOn(blockLocation, entity, itemDisplay);
-                                }
-                            } else {
-                                for (BoundingBox collisionShape : collisionShapes) {
-                                    collisionShape.shift(block.getX(), block.getY(), block.getZ());
-                                    if (isStandingOn(collisionShape, entity.getBoundingBox())) {
-                                        touchable.handleSteppedOn(blockLocation, entity, itemDisplay);
-                                    }
-                                }
+                    Collection<BoundingBox> collisionShapes = block.getCollisionShape().getBoundingBoxes();
+                    // for some reason collision shapes can be empty if the block has a "primitive shape" (such as slabs)
+                    if (collisionShapes.isEmpty()) {
+                        if (isStandingOn(block.getBoundingBox(), entity.getBoundingBox())) {
+                            steppable.handleSteppedOn(blockLocation, entity, itemDisplay);
+                        }
+                    } else {
+                        for (BoundingBox collisionShape : collisionShapes) {
+                            collisionShape.shift(block.getX(), block.getY(), block.getZ());
+                            if (isStandingOn(collisionShape, entity.getBoundingBox())) {
+                                steppable.handleSteppedOn(blockLocation, entity, itemDisplay);
                             }
                         }
                     }
                 }
             }
-        }.runTaskTimer(instance, 0L, 1L);
+        }
     }
 
 
