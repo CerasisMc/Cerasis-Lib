@@ -171,53 +171,52 @@ public class BlockLibService implements Listener {
     @EventHandler
     private void onPlayerInteract(PlayerInteractEvent event) {
         if (event.getHand() != EquipmentSlot.HAND) return;
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+
+        Block clickedBlock = event.getClickedBlock();
+        if (event.getClickedBlock() == null) return;
+
+        ItemStack itemStack = event.getItem();
+        CustomItem customItem = CustomItem.getCustomItem(itemStack);
+        if (!(customItem instanceof CustomBlock customBlock)) return;
 
         Player player = event.getPlayer();
-        ItemStack itemStack = event.getItem();
 
-        CustomItem customItem = CustomItem.getCustomItem(itemStack);
+        // cancel block place if interacted block is interactable
+        // TODO: replace with more robust interaction detection
+        if (clickedBlock.getType().isInteractable() && !player.isSneaking()) return;
 
-        if (customItem == null) return;
-
-        if (customItem instanceof CustomBlock customBlock) {
-            if (event.getAction() == Action.RIGHT_CLICK_BLOCK && event.getClickedBlock() != null) {
-                Block clickedBlock = event.getClickedBlock();
-                BlockFace face = event.getBlockFace();
-                // new block pos
-                Location placeLocation = clickedBlock.getRelative(face).getLocation();
-
-                Block targetBlock = placeLocation.getBlock();
-                if (targetBlock.isReplaceable()) {
-
-                    // bounding box tests
-                    BoundingBox blockBox = BoundingBox.of(targetBlock);
-                    boolean collision = !targetBlock.getWorld()
-                            .getNearbyEntities(blockBox)
-                            .stream()
-                            .filter(entity -> (entity instanceof LivingEntity))
-                            .toList()
-                            .isEmpty();
-
-                    if (collision) return;
-
-
-                    // place custom block: use scheduler so block doesnt get placed twice
-                    Bukkit.getScheduler().runTask(instance, () -> {
-                        customBlock.place(targetBlock.getWorld(), placeLocation, player);
-                        player.swingHand(event.getHand());
-                    });
-
-                    // remove item if player is not in creative mode
-                    if (!event.getPlayer().getGameMode().equals(GameMode.CREATIVE)) {
-                        itemStack.setAmount(itemStack.getAmount() - 1);
-                    }
-
-                    if (player.isSneaking()) {
-                        event.setCancelled(true);
-                    }
-                }
-            }
+        // calculate place Location
+        Block targetBlock = clickedBlock;
+        if (!clickedBlock.isReplaceable()) {
+            targetBlock = clickedBlock.getRelative(event.getBlockFace());
+            if (!targetBlock.isReplaceable()) return;
         }
+
+        Location placeLocation = targetBlock.getLocation();
+
+        // bounding box tests
+        BoundingBox blockBox = BoundingBox.of(targetBlock);
+        boolean collision = targetBlock.getWorld()
+                .getNearbyEntities(blockBox)
+                .stream()
+                .noneMatch(entity -> (entity instanceof LivingEntity));
+
+        if (collision) return;
+
+
+        // place custom block: use scheduler to prevent block from placing twice
+        Bukkit.getScheduler().runTask(instance, () -> {
+            customBlock.place(placeLocation.getWorld(), placeLocation, player);
+            player.swingHand(event.getHand());
+        });
+
+        // remove item if player is not in creative mode
+        if (!event.getPlayer().getGameMode().equals(GameMode.CREATIVE)) {
+            itemStack.setAmount(itemStack.getAmount() - 1);
+        }
+
+        event.setCancelled(true);
     }
 
     private static void interceptPackets() {
@@ -243,7 +242,7 @@ public class BlockLibService implements Listener {
                         itemDisplayLocation.setPitch(blockLocation.getPitch());
 
                         if (blockLocation.equals(itemDisplayLocation) && CustomBlock.isCustomBlock(itemDisplay)) {
-                            // START = Effekt starten
+                            // start -> start particle effect
 
                             CustomBlock customBlock = CustomBlock.getCustomBlock(itemDisplay);
                             if (digType == EnumWrappers.PlayerDigType.START_DESTROY_BLOCK) {
@@ -256,7 +255,7 @@ public class BlockLibService implements Listener {
                                 particleTasks.put(player, taskId);
                             }
 
-                            // STOP oder ABORT = Effekt stoppen
+                            // STOP or ABORT -> stop particle effect
                             if (digType == EnumWrappers.PlayerDigType.ABORT_DESTROY_BLOCK ||
                                     digType == EnumWrappers.PlayerDigType.STOP_DESTROY_BLOCK) {
 
@@ -317,12 +316,11 @@ public class BlockLibService implements Listener {
         new BukkitRunnable() {
             @Override
             public void run() {
-
-                // fail check in case the player manages to glitch the system (It's pretty easy)
-                // still remove his mining speed if player is looking at normal block
+                // fail check in case the player manages to glitch the block break speed system (It's pretty easy)
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     Block block = player.getTargetBlockExact((int) (player.getAttribute(Attribute.BLOCK_INTERACTION_RANGE).getValue() + 1));
                     CustomBlock customBlock = CustomBlock.getCustomBlock(block);
+                    // still remove his mining speed if player is looking at normal block
                     if (player.getAttribute(Attribute.BLOCK_BREAK_SPEED)
                             .getModifier(new NamespacedKey("cerasis", "custom_block")) != null) {
                         if (customBlock != null) continue;
@@ -331,10 +329,11 @@ public class BlockLibService implements Listener {
                     } else {
                         if (customBlock == null) continue;
 
+
                         player.getAttribute(Attribute.BLOCK_BREAK_SPEED).addModifier(
                                 new AttributeModifier(new NamespacedKey("cerasis", "custom_block"),
-                                        customBlock.getBlockHardness() / customBlock.getBlockType().getHardness(),
-                                        AttributeModifier.Operation.ADD_NUMBER
+                                        (customBlock.getBoundingBoxBlock().getHardness() / Math.max(0.001d, customBlock.getHardness())) - 1,
+                                        AttributeModifier.Operation.MULTIPLY_SCALAR_1
                                 )
                         );
                     }

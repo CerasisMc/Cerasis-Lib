@@ -25,9 +25,28 @@ public abstract class CustomBlock extends CustomItem {
         return DEFAULT_MATERIAL;
     }
 
-    public abstract @NotNull Material getBlockType();
+    /**
+     * @return The material to define the custom blocks bounding box
+     * <p>
+     * The material must have a block variant.
+     */
+    public abstract @NotNull Material getBoundingBoxBlock();
 
-    public abstract float getBlockHardness();
+    /**
+     * Returns the custom hardness value of this block, measured in vanilla hardness units.
+     * <p>
+     * <b>Important:</b> Avoid setting values near zero (e.g., 0.0 or 0.001) to achieve instant mining.
+     * The high block break speed multiplier can trigger an engine desync, causing players
+     * to instamine the block behind it.
+     * </p>
+     * <p>
+     * <b>Recommendation:</b> For instant-mineable blocks, configure the bounding box {@link #getBoundingBoxBlock()}
+     * to use a native vanilla block that is already instantly breakable.
+     * </p>
+     *
+     * @return the custom hardness value of this block
+     */
+    public abstract float getHardness();
 
     /**
      * Used for generating the block particles when mining the block
@@ -52,7 +71,7 @@ public abstract class CustomBlock extends CustomItem {
     }
 
     public void place(World world, Location location, Player player) {
-        world.getBlockAt(location).setType(this.getBlockType());
+        world.getBlockAt(location).setType(this.getBoundingBoxBlock());
 
         location.getWorld()
                 .spawn(location.clone().add(.5f, .5f, .5f), ItemDisplay.class, itemDisplay -> {
@@ -76,6 +95,7 @@ public abstract class CustomBlock extends CustomItem {
                         ));
                     }
                 });
+        world.playSound(location, "block." + this.getParticleBlockType().getKey().getKey() + ".place", 1, 1);
     }
 
 
