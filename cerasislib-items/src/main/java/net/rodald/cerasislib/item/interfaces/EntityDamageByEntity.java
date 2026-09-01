@@ -1,4 +1,4 @@
-package net.rodald.cerasislib.items.interfaces;
+package net.rodald.cerasislib.item.interfaces;
 
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 

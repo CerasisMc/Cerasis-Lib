@@ -1,6 +1,6 @@
-package net.rodald.cerasislib.items.interfaces;
+package net.rodald.cerasislib.item.interfaces;
 
-import net.rodald.cerasislib.items.CustomItem;
+import net.rodald.cerasislib.item.AbstractItem;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -9,7 +9,7 @@ import org.bukkit.inventory.meta.components.FoodComponent;
 /**
  * This interface is for implementing consumable logic to CustomItems.
  * <p>
- * Note: For the Item to be consumable, {@link CustomItem#getMaterial()} must return a food material.}
+ * Note: For the Item to be consumable, {@link AbstractItem#getMaterial()} must return a food material.}
  */
 public interface Consumable extends PrepareInterface {
     void handleConsumption(PlayerItemConsumeEvent event);

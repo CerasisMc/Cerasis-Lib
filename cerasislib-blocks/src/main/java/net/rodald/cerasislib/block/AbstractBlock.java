@@ -1,7 +1,7 @@
-package net.rodald.cerasislib.blocks;
+package net.rodald.cerasislib.block;
 
-import net.rodald.cerasislib.blocks.interfaces.Directional;
-import net.rodald.cerasislib.items.CustomItem;
+import net.rodald.cerasislib.block.interfaces.Directional;
+import net.rodald.cerasislib.item.AbstractItem;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -17,7 +17,7 @@ import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
-public abstract class CustomBlock extends CustomItem {
+public abstract class AbstractBlock extends AbstractItem {
     public static final Material DEFAULT_MATERIAL = Material.ECHO_SHARD;
 
     @Override
@@ -49,18 +49,20 @@ public abstract class CustomBlock extends CustomItem {
     public abstract float getHardness();
 
     /**
-     * Used for generating the block particles when mining the block
+     * Used for generating the block particles when mining the block and block sounds
      *
-     * @return The Material of the block which particle should be generated as a {@link Particle#BLOCK_CRUMBLE}.
+     * @return The Material of the block which particle should be generated as a {@link Particle#BLOCK_CRUMBLE} and used for playing break sounds.
      * <p>
      * The material must have a block variant.
      */
-    public abstract @NotNull Material getParticleBlockType();
+    public abstract @NotNull Material getMimickingBlockType();
 
     /**
      * @return if the block can be placed inside entities
      */
-    public abstract boolean isCollidable();
+    public boolean isCollidable() {
+        return getBoundingBoxBlock().isCollidable();
+    }
 
     @Override
     protected void prepareItem(ItemStack itemStack) {
@@ -100,11 +102,11 @@ public abstract class CustomBlock extends CustomItem {
                         ));
                     }
                 });
-        world.playSound(location, "block." + this.getParticleBlockType().getKey().getKey() + ".place", 1, 1);
+        world.playSound(location, "block." + this.getMimickingBlockType().getKey().getKey() + ".place", 1, 1);
     }
 
 
-    public static CustomBlock getCustomBlock(@Nullable Block block) {
+    public static AbstractBlock getAbstractBlock(@Nullable Block block) {
         if (block == null) return null;
 
         Location blockLocation = block.getLocation().add(0.5, 0.5, 0.5);
@@ -116,8 +118,8 @@ public abstract class CustomBlock extends CustomItem {
                 itemDisplayLocation.setYaw(blockLocation.getYaw());
                 itemDisplayLocation.setPitch(blockLocation.getPitch());
 
-                if (blockLocation.equals(itemDisplayLocation) && CustomBlock.isCustomBlock(itemDisplay)) {
-                    return CustomBlock.getCustomBlock(itemDisplay);
+                if (blockLocation.equals(itemDisplayLocation) && AbstractBlock.isAbstractBlock(itemDisplay)) {
+                    return AbstractBlock.getAbstractBlock(itemDisplay);
                 }
             }
         }
@@ -125,15 +127,15 @@ public abstract class CustomBlock extends CustomItem {
         return null;
     }
 
-    public static boolean isCustomBlock(ItemDisplay itemDisplay) {
-        return isCustomItem(itemDisplay.getItemStack());
+    public static boolean isAbstractBlock(ItemDisplay itemDisplay) {
+        return isAbstractItem(itemDisplay.getItemStack());
     }
 
-    public static CustomBlock getCustomBlock(ItemDisplay itemDisplay) {
-        CustomItem customItem = CustomItem.getCustomItem(itemDisplay.getItemStack());
+    public static AbstractBlock getAbstractBlock(ItemDisplay itemDisplay) {
+        AbstractItem abstractItem = AbstractItem.getAbstractItem(itemDisplay.getItemStack());
 
-        if (customItem instanceof CustomBlock customBlock) {
-            return customBlock;
+        if (abstractItem instanceof AbstractBlock abstractBlock) {
+            return abstractBlock;
         }
 
         return null;

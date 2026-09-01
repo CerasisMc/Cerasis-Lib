@@ -1,6 +1,6 @@
-package net.rodald.cerasislib.items.interfaces;
+package net.rodald.cerasislib.item.interfaces;
 
-import net.rodald.cerasislib.items.CustomItem;
+import net.rodald.cerasislib.item.AbstractItem;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -16,14 +16,14 @@ import org.bukkit.inventory.ItemStack;
 public interface Interactable {
 
     /**
-     * Called when a player left-clicks a {@link CustomItem}.
+     * Called when a player left-clicks a {@link AbstractItem}.
      *
      * @param event The PlayerInteractEvent
      */
     void handleLeftClick(PlayerInteractEvent event);
 
     /**
-     * Called when a player right-clicks a {@link CustomItem}.
+     * Called when a player right-clicks a {@link AbstractItem}.
      *
      * @param event The PlayerInteractEvent
      */

@@ -1,4 +1,4 @@
-package net.rodald.cerasislib.blocks;
+package net.rodald.cerasislib.block;
 
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.ProtocolLibrary;
@@ -10,8 +10,8 @@ import com.comphenix.protocol.events.PacketEvent;
 import com.comphenix.protocol.wrappers.BlockPosition;
 import com.comphenix.protocol.wrappers.EnumWrappers;
 import io.papermc.paper.event.player.PlayerPickBlockEvent;
-import net.rodald.cerasislib.blocks.interfaces.Steppable;
-import net.rodald.cerasislib.items.CustomItem;
+import net.rodald.cerasislib.block.interfaces.Steppable;
+import net.rodald.cerasislib.item.AbstractItem;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
@@ -143,7 +143,7 @@ public class BlockLibService implements Listener {
 
                     if (gameMode == GameMode.SURVIVAL && event.isDropItems()) {
 
-                        // Drop the custom item
+                        // Drop the AbstractItem
                         block.getWorld().dropItem(blockLocation, displayedItem);
                         event.setDropItems(false);
                     }
@@ -182,8 +182,8 @@ public class BlockLibService implements Listener {
         if (event.getClickedBlock() == null) return;
 
         ItemStack itemStack = event.getItem();
-        CustomItem customItem = CustomItem.getCustomItem(itemStack);
-        if (!(customItem instanceof CustomBlock customBlock)) return;
+        AbstractItem abstractItem = AbstractItem.getAbstractItem(itemStack);
+        if (!(abstractItem instanceof AbstractBlock abstractBlock)) return;
 
         Player player = event.getPlayer();
 
@@ -201,7 +201,7 @@ public class BlockLibService implements Listener {
         Location placeLocation = targetBlock.getLocation();
 
         // bounding box tests
-        if (customBlock.isCollidable()) {
+        if (abstractBlock.isCollidable()) {
             BoundingBox blockBox = BoundingBox.of(targetBlock);
             boolean collision = !targetBlock.getWorld()
                     .getNearbyEntities(blockBox)
@@ -215,7 +215,7 @@ public class BlockLibService implements Listener {
 
         // place custom block: use scheduler to prevent block from placing twice
         Bukkit.getScheduler().runTask(instance, () -> {
-            customBlock.place(placeLocation.getWorld(), placeLocation, player);
+            abstractBlock.place(placeLocation.getWorld(), placeLocation, player);
             player.swingHand(event.getHand());
         });
 
@@ -249,15 +249,15 @@ public class BlockLibService implements Listener {
                         itemDisplayLocation.setYaw(blockLocation.getYaw());
                         itemDisplayLocation.setPitch(blockLocation.getPitch());
 
-                        if (blockLocation.equals(itemDisplayLocation) && CustomBlock.isCustomBlock(itemDisplay)) {
+                        if (blockLocation.equals(itemDisplayLocation) && AbstractBlock.isAbstractBlock(itemDisplay)) {
                             // start -> start particle effect
 
-                            CustomBlock customBlock = CustomBlock.getCustomBlock(itemDisplay);
+                            AbstractBlock abstractBlock = AbstractBlock.getAbstractBlock(itemDisplay);
                             if (digType == EnumWrappers.PlayerDigType.START_DESTROY_BLOCK) {
                                 if (particleTasks.containsKey(player)) return;
 
                                 int taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(instance, () -> {
-                                    spawnParticlesOnBlockFace(block, player, customBlock.getParticleBlockType());
+                                    spawnParticlesOnBlockFace(block, player, abstractBlock.getMimickingBlockType());
                                 }, 0L, 2L);
 
                                 particleTasks.put(player, taskId);
@@ -325,20 +325,20 @@ public class BlockLibService implements Listener {
         // fail check in case the player manages to glitch the block break speed system (It's pretty easy)
         for (Player player : Bukkit.getOnlinePlayers()) {
             Block block = player.getTargetBlockExact((int) (player.getAttribute(Attribute.BLOCK_INTERACTION_RANGE).getValue() + 1));
-            CustomBlock customBlock = CustomBlock.getCustomBlock(block);
+            AbstractBlock abstractBlock = AbstractBlock.getAbstractBlock(block);
             // still remove his mining speed if player is looking at normal block
             if (player.getAttribute(Attribute.BLOCK_BREAK_SPEED)
                     .getModifier(new NamespacedKey("cerasis", "custom_block")) != null) {
-                if (customBlock != null) continue;
+                if (abstractBlock != null) continue;
 
                 player.getAttribute(Attribute.BLOCK_BREAK_SPEED).removeModifier(new NamespacedKey("cerasis", "custom_block"));
             } else {
-                if (customBlock == null) continue;
+                if (abstractBlock == null) continue;
 
 
                 player.getAttribute(Attribute.BLOCK_BREAK_SPEED).addModifier(
                         new AttributeModifier(new NamespacedKey("cerasis", "custom_block"),
-                                (customBlock.getBoundingBoxBlock().getHardness() / Math.max(0.001d, customBlock.getHardness())) - 1,
+                                (abstractBlock.getBoundingBoxBlock().getHardness() / Math.max(0.001d, abstractBlock.getHardness())) - 1,
                                 AttributeModifier.Operation.MULTIPLY_SCALAR_1
                         )
                 );
@@ -347,10 +347,10 @@ public class BlockLibService implements Listener {
 
         for (World world : Bukkit.getWorlds()) {
             for (ItemDisplay itemDisplay : world.getEntitiesByClass(ItemDisplay.class)) {
-                if (!CustomBlock.isCustomBlock(itemDisplay)) continue;
+                if (!AbstractBlock.isAbstractBlock(itemDisplay)) continue;
 
-                CustomBlock customBlock = CustomBlock.getCustomBlock(itemDisplay);
-                if (!(customBlock instanceof Steppable steppable)) continue;
+                AbstractBlock abstractBlock = AbstractBlock.getAbstractBlock(itemDisplay);
+                if (!(abstractBlock instanceof Steppable steppable)) continue;
                 Block block = itemDisplay.getLocation().getBlock();
                 Location blockLocation = block.getLocation().add(0.5, 0.5, 0.5);
 

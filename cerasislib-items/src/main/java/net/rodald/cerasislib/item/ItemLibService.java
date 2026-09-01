@@ -1,7 +1,7 @@
-package net.rodald.cerasislib.items;
+package net.rodald.cerasislib.item;
 
 import com.destroystokyo.paper.event.player.PlayerJumpEvent;
-import net.rodald.cerasislib.items.interfaces.*;
+import net.rodald.cerasislib.item.interfaces.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -43,12 +43,12 @@ public class ItemLibService implements Listener {
         Player player = event.getPlayer();
         ItemStack itemStack = player.getInventory().getItemInMainHand();
 
-        CustomItem customItem = CustomItem.getCustomItem(itemStack);
+        AbstractItem abstractItem = AbstractItem.getAbstractItem(itemStack);
 
-        if (customItem == null) return;
+        if (abstractItem == null) return;
 
-        if (customItem instanceof BlockBreak blockBreak) {
-            blockBreak.handleBlockBreak(event);
+        if (abstractItem instanceof BlockBreakTriggered blockBreakTriggered) {
+            blockBreakTriggered.handleBlockBreak(event);
         }
     }
 
@@ -57,11 +57,11 @@ public class ItemLibService implements Listener {
         if (event.getDamager() instanceof Player player) {
             ItemStack itemStack = player.getInventory().getItemInMainHand();
 
-            CustomItem customItem = CustomItem.getCustomItem(itemStack);
+            AbstractItem abstractItem = AbstractItem.getAbstractItem(itemStack);
 
-            if (customItem == null) return;
+            if (abstractItem == null) return;
 
-            if (customItem instanceof EntityDamageByEntity entityDamageByEntity) {
+            if (abstractItem instanceof EntityDamageByEntity entityDamageByEntity) {
                 entityDamageByEntity.handleEntityDamageByEntity(event);
             }
         }
@@ -69,7 +69,7 @@ public class ItemLibService implements Listener {
 
     @EventHandler
     private void onEntityChangeBlock(EntityChangeBlockEvent event) {
-        for (Map.Entry<ItemStack, CustomItem> entry : CustomItem.customItems.entrySet()) {
+        for (Map.Entry<ItemStack, AbstractItem> entry : AbstractItem.abstractItems.entrySet()) {
             if (entry.getValue() instanceof EntityChangeBlock entityChangeBlock) {
                 entityChangeBlock.handleEntityChangeBlock(event);
             }
@@ -80,11 +80,11 @@ public class ItemLibService implements Listener {
     private void onPlayerDropItem(PlayerDropItemEvent event) {
         ItemStack itemStack = event.getItemDrop().getItemStack();
 
-        CustomItem customItem = CustomItem.getCustomItem(itemStack);
+        AbstractItem abstractItem = AbstractItem.getAbstractItem(itemStack);
 
-        if (customItem == null) return;
+        if (abstractItem == null) return;
 
-        if (customItem instanceof Interactable interactable) {
+        if (abstractItem instanceof Interactable interactable) {
             interactable.handleItemAction(event);
         }
     }
@@ -93,11 +93,11 @@ public class ItemLibService implements Listener {
     private void onPlayerDeath(PlayerDeathEvent event) {
         ItemStack itemStack = event.getPlayer().getInventory().getItemInMainHand();
 
-        CustomItem customItem = CustomItem.getCustomItem(itemStack);
+        AbstractItem abstractItem = AbstractItem.getAbstractItem(itemStack);
 
-        if (customItem == null) return;
+        if (abstractItem == null) return;
 
-        if (customItem instanceof PlayerDeath playerDeath) {
+        if (abstractItem instanceof PlayerDeath playerDeath) {
             playerDeath.handlePlayerDeath(event);
         }
     }
@@ -106,12 +106,12 @@ public class ItemLibService implements Listener {
     public void onPlayerJump(PlayerJumpEvent event) {
         ItemStack itemStack = event.getPlayer().getInventory().getItemInMainHand();
 
-        CustomItem customItem = CustomItem.getCustomItem(itemStack);
+        AbstractItem abstractItem = AbstractItem.getAbstractItem(itemStack);
 
-        if (customItem == null) return;
+        if (abstractItem == null) return;
 
-        if (customItem instanceof PlayerJump playerJump) {
-            playerJump.handlePlayerJump(event);
+        if (abstractItem instanceof JumpTriggered jumpTriggered) {
+            jumpTriggered.handlePlayerJump(event);
         }
     }
 
@@ -120,11 +120,11 @@ public class ItemLibService implements Listener {
     private void onPlayerInteract(PlayerInteractEvent event) {
         ItemStack itemStack = event.getItem();
 
-        CustomItem customItem = CustomItem.getCustomItem(itemStack);
+        AbstractItem abstractItem = AbstractItem.getAbstractItem(itemStack);
 
-        if (customItem == null) return;
+        if (abstractItem == null) return;
 
-        if (customItem instanceof Interactable interactable) {
+        if (abstractItem instanceof Interactable interactable) {
             interactable.handleItemAction(event);
         }
     }
@@ -133,11 +133,11 @@ public class ItemLibService implements Listener {
     private void onPlayerItemConsume(PlayerItemConsumeEvent event) {
         ItemStack itemStack = event.getItem();
 
-        CustomItem customItem = CustomItem.getCustomItem(itemStack);
+        AbstractItem abstractItem = AbstractItem.getAbstractItem(itemStack);
 
-        if (customItem == null) return;
+        if (abstractItem == null) return;
 
-        if (customItem instanceof Consumable consumable) {
+        if (abstractItem instanceof Consumable consumable) {
             consumable.handleConsumption(event);
         }
     }
@@ -146,12 +146,12 @@ public class ItemLibService implements Listener {
     private void onPlayerQuit(PlayerQuitEvent event) {
         PlayerInventory playerInventory = event.getPlayer().getInventory();
 
-        if (CustomItem.getCustomItem(playerInventory.getItemInMainHand()) instanceof PlayerQuit quit) {
+        if (AbstractItem.getAbstractItem(playerInventory.getItemInMainHand()) instanceof PlayerQuit quit) {
             quit.handlePlayerQuitMainHand(event);
         }
 
         for (ItemStack item : playerInventory) {
-            if (CustomItem.getCustomItem(item) instanceof PlayerQuit quit) {
+            if (AbstractItem.getAbstractItem(item) instanceof PlayerQuit quit) {
                 quit.handlePlayerQuitInventory(event);
                 break;
             }
@@ -162,7 +162,7 @@ public class ItemLibService implements Listener {
         new BukkitRunnable() {
             @Override
             public void run() {
-                for (Map.Entry<ItemStack, CustomItem> entry : CustomItem.customItems.entrySet()) {
+                for (Map.Entry<ItemStack, AbstractItem> entry : AbstractItem.abstractItems.entrySet()) {
                     if (entry.getValue() instanceof Tickable tickable) {
                         tickable.tick();
                     }

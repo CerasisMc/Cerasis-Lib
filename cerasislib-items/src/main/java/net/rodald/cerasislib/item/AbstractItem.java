@@ -1,9 +1,9 @@
-package net.rodald.cerasislib.items;
+package net.rodald.cerasislib.item;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import net.rodald.cerasislib.items.interfaces.PrepareInterface;
+import net.rodald.cerasislib.item.interfaces.PrepareInterface;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -20,9 +20,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public abstract class CustomItem {
+public abstract class AbstractItem {
 
-    public static final Map<ItemStack, CustomItem> customItems = new HashMap<>();
+    public static final Map<ItemStack, AbstractItem> abstractItems = new HashMap<>();
 
     public abstract @NotNull Material getMaterial();
 
@@ -30,8 +30,8 @@ public abstract class CustomItem {
 
     public abstract List<Component> getItemLore();
 
-    public CustomItem() {
-        customItems.put(this.createItem(), this);
+    public AbstractItem() {
+        abstractItems.put(this.createItem(), this);
     }
 
     /**
@@ -76,8 +76,8 @@ public abstract class CustomItem {
      * @param itemStack The ItemStack to check and retrieve a CustomItem for.
      * @return The corresponding CustomItem, or null if invalid or reconstruction failed.
      */
-    public static CustomItem getCustomItem(ItemStack itemStack) {
-        if (!isCustomItem(itemStack)) {
+    public static AbstractItem getAbstractItem(ItemStack itemStack) {
+        if (!isAbstractItem(itemStack)) {
             return null;
         }
 
@@ -92,9 +92,9 @@ public abstract class CustomItem {
         }
 
         // Check if the CustomItem is already registered
-        for (CustomItem customItem : customItems.values()) {
-            if (customItem.getClass().getName().equals(className)) {
-                return customItem;
+        for (AbstractItem abstractItem : abstractItems.values()) {
+            if (abstractItem.getClass().getName().equals(className)) {
+                return abstractItem;
             }
         }
 
@@ -103,9 +103,9 @@ public abstract class CustomItem {
         Bukkit.getLogger().info("Class: " + className);
         try {
             Class<?> clazz = Class.forName(className);
-            if (CustomItem.class.isAssignableFrom(clazz)) {
+            if (AbstractItem.class.isAssignableFrom(clazz)) {
                 Constructor<?> constructor = clazz.getConstructor();
-                return (CustomItem) constructor.newInstance();
+                return (AbstractItem) constructor.newInstance();
             } else {
                 throw new IllegalArgumentException("Class " + className + " is not a subclass of CustomItem.");
             }
@@ -152,7 +152,7 @@ public abstract class CustomItem {
      * @param itemStack The item stack to check.
      * @return True if it's a custom item, false otherwise.
      */
-    public static boolean isCustomItem(ItemStack itemStack) {
+    public static boolean isAbstractItem(ItemStack itemStack) {
         if (itemStack == null || !itemStack.hasItemMeta()) {
             return false;
         }
@@ -200,28 +200,28 @@ public abstract class CustomItem {
         private Material material = Material.AIR;
         private NamespacedKey namespacedKey;
 
-        public CustomItem.Builder displayName(Component text) {
+        public AbstractItem.Builder displayName(Component text) {
             this.displayName = text;
             return this;
         }
 
-        public CustomItem.Builder lore(List<Component> lore) {
+        public AbstractItem.Builder lore(List<Component> lore) {
             this.lore = lore;
             return this;
         }
 
-        public CustomItem.Builder material(Material material) {
+        public AbstractItem.Builder material(Material material) {
             this.material = material;
             return this;
         }
 
-        public CustomItem.Builder namespacedKey(NamespacedKey namespacedKey) {
+        public AbstractItem.Builder namespacedKey(NamespacedKey namespacedKey) {
             this.namespacedKey = namespacedKey;
             return this;
         }
 
-        public CustomItem build() {
-            return new CustomItem() {
+        public AbstractItem build() {
+            return new AbstractItem() {
                 @Override
                 public @NotNull Material getMaterial() {
                     return material;

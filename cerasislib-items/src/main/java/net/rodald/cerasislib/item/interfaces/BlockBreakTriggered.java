@@ -1,11 +1,11 @@
-package net.rodald.cerasislib.items.interfaces;
+package net.rodald.cerasislib.item.interfaces;
 
 import org.bukkit.event.block.BlockBreakEvent;
 
 /**
  * This interface is for implementing block-breaking logic to CustomItems.
  */
-public interface BlockBreak {
+public interface BlockBreakTriggered {
 
     /**
      * Called when a block is broken using a CustomItem.
