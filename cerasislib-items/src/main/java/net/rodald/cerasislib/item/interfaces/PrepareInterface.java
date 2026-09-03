@@ -8,6 +8,6 @@ import org.bukkit.inventory.ItemStack;
  * <p>
  * Use the {@link AbstractItem#prepareItem(ItemStack)} method instead.
  */
-public interface PrepareInterface {
+public sealed interface PrepareInterface permits Consumable {
     void prepareItem(ItemStack itemStack);
 }

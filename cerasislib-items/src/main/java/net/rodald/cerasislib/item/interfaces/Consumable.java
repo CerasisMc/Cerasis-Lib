@@ -11,7 +11,7 @@ import org.bukkit.inventory.meta.components.FoodComponent;
  * <p>
  * Note: For the Item to be consumable, {@link AbstractItem#getMaterial()} must return a food material.}
  */
-public interface Consumable extends PrepareInterface {
+public non-sealed interface Consumable extends PrepareInterface {
     void handleConsumption(PlayerItemConsumeEvent event);
 
     @Override
